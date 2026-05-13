@@ -4,29 +4,12 @@ import type { Request } from "express";
 import { db } from "../../common/config/db";
 import { getIssuer, getRedirectUri, parseCookies } from "../../common/utils/auth.utils";
 import { env } from "../../config/env";
-import { users, type NewUser, type User } from "./dto/user.dto";
+import type { TokenResponse } from "./model/auth.types";
+import { users } from "./dto/user.dto";
+import type { CurrentUser, NewUser, OidcUserInfo, User } from "./model/user.types";
 export const STATE_COOKIE_NAME = "pb_auth_state";
 export const AUTH_COOKIE_NAME = "pb_auth_token";
 
-type TokenResponse = {
-	access_token: string;
-	refresh_token?: string;
-	id_token?: string;
-	expires_in: number;
-	token_type: string;
-};
-
-type OidcUserInfo = {
-	sub?: string;
-	email?: string;
-	name?: string;
-	picture?: string | null;
-};
-
-export type CurrentUser = OidcUserInfo & {
-	id?: number;
-	oidcSub?: string;
-};
 const createLoginUrl = (req: Request) => {
 	const state = crypto.randomBytes(24).toString("base64url");
 	const loginUrl = new URL("/auth/authenticate", getIssuer());
@@ -184,7 +167,7 @@ const persistUserFromToken = async (token: string) => {
 	return upsertUserFromOidc(userInfo);
 };
 
-const fetchCurrentUser = async (req: Request) => {
+const fetchCurrentUser = async (req: Request): Promise<CurrentUser | null> => {
 	const token = parseCookies(req)[AUTH_COOKIE_NAME];
 	if (!token) return null;
 

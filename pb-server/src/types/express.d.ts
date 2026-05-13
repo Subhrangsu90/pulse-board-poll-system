@@ -1,4 +1,4 @@
-import type { CurrentUser } from "../modules/auth/auth.service";
+import type { CurrentUser } from "../modules/auth/model/user.types";
 
 declare global {
 	namespace Express {
