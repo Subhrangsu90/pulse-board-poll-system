@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { env } from "../../config/env";
 
 const COOKIE_MAX_AGE_SECONDS = 60 * 60;
+type CookieMap = Record<string, string>;
 
 const getIssuer = () => {
 	return env.oidcIssuer;
@@ -20,7 +21,7 @@ const getRedirectUri = (req: Request) => {
 		return env.redirectUri;
 	}
 
-	return `${getBaseUrl(req)}/auth/callback`;
+	return `${getBaseUrl(req)}/api/v1/auth/callback`;
 };
 
 const shouldUseSecureCookies = (req: Request) => {
@@ -47,5 +48,29 @@ const setCookie = (
 		path: "/",
 	});
 };
+const parseCookies = (req: Request): CookieMap => {
+	const header = req.headers.cookie;
 
-export { getIssuer, getBaseUrl, getRedirectUri, setCookie };
+	if (!header) return {};
+
+	return header.split(";").reduce<CookieMap>((cookies, pair) => {
+		const [rawName, ...rawValue] = pair.trim().split("=");
+
+		if (!rawName) return cookies;
+
+		cookies[rawName] = decodeURIComponent(rawValue.join("="));
+
+		return cookies;
+	}, {});
+};
+
+const clearCookie = (res: Response, req: Request, name: string) => {
+	res.clearCookie(name, {
+		httpOnly: true,
+		secure: shouldUseSecureCookies(req),
+		sameSite: "lax",
+		path: "/",
+	});
+};
+
+export { getIssuer, getBaseUrl, getRedirectUri, setCookie, parseCookies, clearCookie };

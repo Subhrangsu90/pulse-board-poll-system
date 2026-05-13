@@ -1,7 +1,7 @@
 ## Auth Routes
 
 ```
-GET /user-info
+GET /current-user
 GET /logout
 ```
 

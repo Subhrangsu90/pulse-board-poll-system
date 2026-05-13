@@ -24,6 +24,7 @@ export const env = {
 	oidcClientSecret: process.env.OIDC_CLIENT_SECRET,
 	oidcIssuer: trimTrailingSlash(process.env.OIDC_ISSUER ?? "http://localhost:3000"),
 	baseUrl: process.env.BASE_URL ? trimTrailingSlash(process.env.BASE_URL) : undefined,
+	clientUrl: process.env.CLIENT_URL ? trimTrailingSlash(process.env.CLIENT_URL) : "http://localhost:5173",
 	redirectUri: process.env.REDIRECT_URI ? trimTrailingSlash(process.env.REDIRECT_URI) : undefined,
 	cookieSecure: process.env.COOKIE_SECURE,
 };
