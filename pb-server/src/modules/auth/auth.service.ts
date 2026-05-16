@@ -177,9 +177,7 @@ const fetchCurrentUser = async (req: Request): Promise<CurrentUser | null> => {
 	const savedUser = await upsertUserFromOidc(userInfo);
 
 	return {
-		...userInfo,
 		id: savedUser.id,
-		oidcSub: savedUser.oidcSub,
 		email: savedUser.email,
 		name: savedUser.name,
 		picture: savedUser.picture,

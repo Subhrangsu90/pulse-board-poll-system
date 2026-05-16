@@ -1,0 +1,29 @@
+{
+	"name": "pulse-board-poll-system",
+	"version": "1.0.0",
+	"description": "Pulse Board Poll System - A real-time polling application",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+		"dev:server": "cd pb-server && npm run dev",
+		"dev:client": "cd pb-client && npm run dev",
+		"build": "npm run build:server && npm run build:client",
+		"build:server": "cd pb-server && npm run build",
+		"build:client": "cd pb-client && npm run build",
+		"lint": "npm run lint:server && npm run lint:client",
+		"lint:server": "cd pb-server && npm run lint",
+		"lint:client": "cd pb-client && npm run lint",
+		"db:generate": "cd pb-server && npm run db:generate",
+		"db:migrate": "cd pb-server && npm run db:migrate",
+		"db:studio": "cd pb-server && npm run db:studio",
+		"db:up": "cd pb-server && docker-compose up -d",
+		"db:down": "cd pb-server && docker-compose down",
+		"install:all": "npm install && cd pb-server && npm install && cd ../pb-client && npm install && cd ..",
+		"start:db": "cd pb-server && docker-compose up -d && echo 'Database started on port 5434'",
+		"setup": "npm run install:all && npm run start:db && npm run db:migrate"
+	},
+	"devDependencies": {
+		"concurrently": "^9.1.0"
+	}
+}

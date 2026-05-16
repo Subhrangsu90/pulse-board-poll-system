@@ -24,6 +24,8 @@
     --color-on-primary: #ffffff;
     --color-primary-container: #4a7c59;
     --color-on-primary-container: #e1ffe5;
+    --color-primary-fixed: #b9efc5;
+    --color-on-primary-fixed: #00210d;
     --color-inverse-primary: #9dd3aa;
 
     --color-secondary: #4c644e;
@@ -131,6 +133,8 @@
         --color-on-primary: #00391b;
         --color-primary-container: #1e5031;
         --color-on-primary-container: #b9efc5;
+        --color-primary-fixed: #b9efc5;
+        --color-on-primary-fixed: #00210d;
         --color-inverse-primary: #316342;
 
         --color-secondary: #b3cdb3;
@@ -179,6 +183,8 @@
     --color-on-primary: #00391b;
     --color-primary-container: #1e5031;
     --color-on-primary-container: #b9efc5;
+    --color-primary-fixed: #b9efc5;
+    --color-on-primary-fixed: #00210d;
     --color-inverse-primary: #316342;
 
     --color-secondary: #b3cdb3;

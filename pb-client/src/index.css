@@ -1,6 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Literata:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:FILL@0..1&display=swap");
 @import "tailwindcss";
-@import "./base.css";
 
 @theme {
     --color-surface: #f7faf4;
@@ -26,6 +26,8 @@
     --color-on-primary: #ffffff;
     --color-primary-container: #4a7c59;
     --color-on-primary-container: #e1ffe5;
+    --color-primary-fixed: #b9efc5;
+    --color-on-primary-fixed: #00210d;
     --color-inverse-primary: #9dd3aa;
 
     --color-secondary: #4c644e;
@@ -103,10 +105,14 @@
     --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
 
+@import "./base.css";
+
 @layer base {
     #root {
         min-height: 100vh;
     }
-}
 
-@layer components {}
+    body {
+        @apply selection:bg-primary-fixed selection:text-on-primary-fixed;
+    }
+}

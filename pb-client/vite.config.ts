@@ -10,9 +10,8 @@ export default defineConfig({
 			target: "react",
 			autoCodeSplitting: true,
 		}),
-		,
-		react(),
 		tailwindcss(),
+		react(),
 	],
 	server: {
 		port: 5173,

@@ -10,7 +10,9 @@ export type OidcUserInfo = {
 	picture?: string | null;
 };
 
-export type CurrentUser = OidcUserInfo & {
-	id?: number;
-	oidcSub?: string;
+export type CurrentUser = {
+	id: string;
+	email: string;
+	name: string;
+	picture: string | null;
 };
