@@ -1,6 +1,44 @@
+import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { authService } from "../services/api/authService";
 
 export default function Landing() {
+	const navigate = useNavigate();
+	const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+	useEffect(() => {
+		authService
+			.getCurrentUser()
+			.then(() => {
+				void navigate({ to: "/dashboard", replace: true });
+			})
+			.catch(() => {
+				setIsCheckingAuth(false);
+			});
+	}, [navigate]);
+
+	if (isCheckingAuth) {
+		return (
+			<div className="grid min-h-screen place-items-center bg-background px-margin text-on-surface">
+				<div className="flex flex-col items-center gap-md text-center">
+					<div className="grid h-16 w-16 place-items-center rounded-full bg-primary-container text-on-primary-container shadow-popover">
+						<span className="material-symbols-outlined text-headline-md">
+							analytics
+						</span>
+					</div>
+					<div>
+						<p className="font-serif text-headline-md text-primary">
+							PulseBoard
+						</p>
+						<p className="font-sans text-body-md text-on-surface-variant">
+							Checking your session
+						</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<>
 			<header

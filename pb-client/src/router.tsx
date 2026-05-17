@@ -1,22 +1,82 @@
 import { createRoute, createRouter } from "@tanstack/react-router";
 
 import { rootRoute } from "./routes/__root";
-import Dashboard from "./pages/dashboard";
+import { AppLayout } from "./components/layout/AppLayout";
+import CreatePoll from "./pages/createPoll";
+import Dashboard from "./pages/Dashboard";
+import Drafts from "./pages/drafts";
 import Landing from "./pages/landing";
+import MyPolls from "./pages/myPolls";
+import Profile from "./pages/profile";
+import Results from "./pages/results";
+import Settings from "./pages/settings";
 
-const homeRoute = createRoute({
+const workspaceRoute = createRoute({
 	getParentRoute: () => rootRoute,
+	id: "workspace",
+	component: AppLayout,
+});
+
+const dashboardRoute = createRoute({
+	getParentRoute: () => workspaceRoute,
 	path: "/dashboard",
 	component: Dashboard,
 });
 
-const aboutRoute = createRoute({
+const resultsRoute = createRoute({
+	getParentRoute: () => workspaceRoute,
+	path: "/results",
+	component: Results,
+});
+
+const pollsRoute = createRoute({
+	getParentRoute: () => workspaceRoute,
+	path: "/polls",
+	component: MyPolls,
+});
+
+const draftsRoute = createRoute({
+	getParentRoute: () => workspaceRoute,
+	path: "/drafts",
+	component: Drafts,
+});
+
+const settingsRoute = createRoute({
+	getParentRoute: () => workspaceRoute,
+	path: "/settings",
+	component: Settings,
+});
+
+const createPollRoute = createRoute({
+	getParentRoute: () => workspaceRoute,
+	path: "/create",
+	component: CreatePoll,
+});
+
+const profileRoute = createRoute({
+	getParentRoute: () => workspaceRoute,
+	path: "/profile",
+	component: Profile,
+});
+
+const landingRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/",
 	component: Landing,
 });
 
-const routeTree = rootRoute.addChildren([homeRoute, aboutRoute]);
+const routeTree = rootRoute.addChildren([
+	workspaceRoute.addChildren([
+		dashboardRoute,
+		resultsRoute,
+		pollsRoute,
+		draftsRoute,
+		settingsRoute,
+		createPollRoute,
+		profileRoute,
+	]),
+	landingRoute,
+]);
 
 export const router = createRouter({
 	routeTree,

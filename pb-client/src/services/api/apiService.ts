@@ -19,6 +19,26 @@ export const api = axios.create({
 	},
 });
 
+let isRedirectingToLogin = false;
+
+api.interceptors.response.use(
+	(response) => response,
+	(error) => {
+		if (axios.isAxiosError(error) && error.response?.status === 401) {
+			const isPublicPage = window.location.pathname === "/";
+			const requestUrl = error.config?.url ?? "";
+			const isLogoutRequest = requestUrl.includes("/auth/logout");
+
+			if (!isPublicPage && !isLogoutRequest && !isRedirectingToLogin) {
+				isRedirectingToLogin = true;
+				window.location.href = `${API_BASE_URL}/auth/login`;
+			}
+		}
+
+		return Promise.reject(error);
+	}
+);
+
 // generic GET
 export async function apiGet<T>(path: string): Promise<T> {
 	const { data } = await api.get<ApiResponse<T>>(path);
