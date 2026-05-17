@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import { badRequest, unauthorized } from "../../common/utils/api.error";
 import { created, ok } from "../../common/utils/api.response";
+import { parseSchema } from "../../common/utils/validation";
+import { createPollBodySchema } from "./model/poll.type";
 import * as pollService from "./poll.service";
 
 function getPollId(req: Request) {
@@ -20,7 +22,7 @@ const createPolls = async (req: Request, res: Response) => {
 
 	const poll = await pollService.createPoll({
 		creatorId: req.user.id,
-		...req.body,
+		...parseSchema(createPollBodySchema, req.body),
 	});
 
 	return created(res, "Poll created successfully", poll);
