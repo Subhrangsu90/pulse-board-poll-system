@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { authService, type CurrentUser } from "../services/api/authService";
+import { pollService } from "../services/api/pollService";
 
 export default function Dashboard() {
 	const [user, setUser] = useState<CurrentUser | null>(null);
@@ -16,6 +17,15 @@ export default function Dashboard() {
 				setIsLoading(false);
 			});
 	}, []);
+
+	const handleGetAllPolls = async () => {
+		try {
+			const polls = await pollService.getAllPolls();
+			console.log("All polls:", polls);
+		} catch (error) {
+			console.error("Unable to fetch polls:", error);
+		}
+	};
 
 	if (isLoading) {
 		return (
@@ -41,6 +51,13 @@ export default function Dashboard() {
 					onClick={authService.logout}>
 					Logout
 				</a>
+			</div>
+			<div className="mx-auto mt-xl max-w-5xl">
+				<button
+					className="rounded-full bg-primary px-md py-sm font-sans text-label-lg text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
+					onClick={handleGetAllPolls}>
+					Console Get All Polls
+				</button>
 			</div>
 		</div>
 	);

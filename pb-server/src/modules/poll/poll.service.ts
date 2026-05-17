@@ -1,18 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { and, desc, eq, lte } from "drizzle-orm";
 import { db } from "../../common/config/db";
-import { badRequest } from "../../common/utils/api.error";
+import { badRequest, notFound } from "../../common/utils/api.error";
 import { polls } from "./dto/polls.dto";
-
-type CreatePollInput = {
-	creatorId: string;
-	title?: unknown;
-	description?: unknown;
-	tags?: unknown;
-	responseMode?: unknown;
-	expiresAt?: unknown;
-	isPublished?: unknown;
-	publicSlug?: unknown;
-};
+import { CreatePollInput } from "./model/poll.type";
 
 const responseModes = ["anonymous", "authenticated"] as const;
 
@@ -65,7 +56,7 @@ function normalizePublicSlug(value: unknown): string {
 	return randomUUID();
 }
 
-async function createPoll(input: CreatePollInput) {
+const createPoll = async (input: CreatePollInput) => {
 	if (typeof input.title !== "string" || !input.title.trim()) {
 		throw badRequest("Title is required.");
 	}
@@ -101,7 +92,47 @@ async function createPoll(input: CreatePollInput) {
 		.returning();
 
 	return createdPoll;
-}
+};
 
-export { createPoll };
+const completePoll = async (pollId: string, creatorId: string) => {
+	const [completedPoll] = await db
+		.update(polls)
+		.set({
+			status: "completed",
+			isPublished: false,
+			updatedAt: new Date(),
+		})
+		.where(and(eq(polls.id, pollId), eq(polls.creatorId, creatorId)))
+		.returning();
+
+	if (!completedPoll) {
+		throw notFound("Poll not found.");
+	}
+
+	return completedPoll;
+};
+
+const expireDuePolls = async () => {
+	return db
+		.update(polls)
+		.set({
+			status: "expired",
+			isPublished: false,
+			updatedAt: new Date(),
+		})
+		.where(and(eq(polls.status, "active"), lte(polls.expiresAt, new Date())))
+		.returning();
+};
+
+const getAllPolls = async (creatorId: string) => {
+	await expireDuePolls();
+
+	return db
+		.select()
+		.from(polls)
+		.where(eq(polls.creatorId, creatorId))
+		.orderBy(desc(polls.createdAt));
+};
+
+export { completePoll, createPoll, expireDuePolls, getAllPolls };
 export type { CreatePollInput };

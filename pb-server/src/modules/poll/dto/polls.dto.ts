@@ -3,7 +3,6 @@ import {
 	boolean,
 	pgEnum,
 	pgTable,
-	serial,
 	text,
 	timestamp,
 	uuid,

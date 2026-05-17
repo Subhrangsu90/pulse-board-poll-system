@@ -1,7 +1,17 @@
 import type { Request, Response } from "express";
-import { unauthorized } from "../../common/utils/api.error";
-import { created } from "../../common/utils/api.response";
+import { badRequest, unauthorized } from "../../common/utils/api.error";
+import { created, ok } from "../../common/utils/api.response";
 import * as pollService from "./poll.service";
+
+function getPollId(req: Request) {
+	const { pollId } = req.params;
+
+	if (!pollId || Array.isArray(pollId)) {
+		throw badRequest("Poll id is required.");
+	}
+
+	return pollId;
+}
 
 const createPolls = async (req: Request, res: Response) => {
 	if (!req.user?.id) {
@@ -16,4 +26,24 @@ const createPolls = async (req: Request, res: Response) => {
 	return created(res, "Poll created successfully", poll);
 };
 
-export { createPolls };
+const completePoll = async (req: Request, res: Response) => {
+	if (!req.user?.id) {
+		throw unauthorized("Authentication required.");
+	}
+
+	const poll = await pollService.completePoll(getPollId(req), req.user.id);
+
+	return ok(res, "Poll completed successfully", poll);
+};
+
+const getAllPolls = async (req: Request, res: Response) => {
+	if (!req.user?.id) {
+		throw unauthorized("Authentication required.");
+	}
+
+	const polls = await pollService.getAllPolls(req.user.id);
+
+	return ok(res, "Polls fetched successfully", polls);
+};
+
+export { completePoll, createPolls, getAllPolls };

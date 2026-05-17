@@ -10,7 +10,7 @@ type CurrentUser = {
 const authRoutes = {
 	login: `${API_BASE_URL}/auth/login`,
 	register: `${API_BASE_URL}/auth/register`,
-	logout: `${API_BASE_URL}/auth/logout`,
+	logout: "/auth/logout",
 	currentUser: "/auth/current-user",
 } as const;
 
@@ -23,8 +23,14 @@ export const authService = {
 		window.location.href = authRoutes.register;
 	},
 
-	logout() {
-		window.location.href = authRoutes.logout;
+	async logout() {
+		try {
+			await apiGet(authRoutes.logout);
+		} catch (error) {
+			console.error("Logout failed", error);
+		} finally {
+			window.location.href = "/";
+		}
 	},
 
 	async getCurrentUser() {
