@@ -8,6 +8,7 @@ type ReviewPublishStepProps = {
 	questions: SavedQuestion[];
 	isPublishDialogOpen: boolean;
 	onClosePublishDialog: () => void;
+	onFinishPublish: () => void;
 };
 
 function getExpiryLabel(requirements: PollRequirements) {
@@ -24,7 +25,9 @@ function getExpiryLabel(requirements: PollRequirements) {
 
 function getPollLink(publicSlug: string | null, pollId: string | null) {
 	const origin =
-		typeof window === "undefined" ? "pulseboard.com" : window.location.origin;
+		typeof window === "undefined"
+			? "pulseboard.com"
+			: window.location.origin;
 	const slug = publicSlug || pollId;
 
 	return slug
@@ -39,6 +42,7 @@ export function ReviewPublishStep({
 	questions,
 	isPublishDialogOpen,
 	onClosePublishDialog,
+	onFinishPublish,
 }: ReviewPublishStepProps) {
 	const [copyLabel, setCopyLabel] = useState("Copy Link");
 	const pollLink = getPollLink(
@@ -178,7 +182,9 @@ export function ReviewPublishStep({
 									Slug
 								</span>
 								<span className="text-right text-on-surface font-label-md font-bold break-all">
-									{publicSlug || requirements.publicSlug || "Auto generated"}
+									{publicSlug ||
+										requirements.publicSlug ||
+										"Auto generated"}
 								</span>
 							</li>
 							<li className="flex justify-between items-center">
@@ -261,6 +267,7 @@ export function ReviewPublishStep({
 			{isPublishDialogOpen ? (
 				<SuccessDialog
 					onClose={onClosePublishDialog}
+					onDone={onFinishPublish}
 					onCopyLink={copyPollLink}
 					pollLink={pollLink}
 					copyLabel={copyLabel}
@@ -275,6 +282,7 @@ type SuccessDialogProps = {
 	copyLabel: string;
 	onCopyLink: () => void;
 	onClose: () => void;
+	onDone: () => void;
 };
 
 export function SuccessDialog({
@@ -282,15 +290,16 @@ export function SuccessDialog({
 	copyLabel,
 	onCopyLink,
 	onClose,
+	onDone,
 }: SuccessDialogProps) {
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-md">
 			<div
 				aria-modal="true"
-				className="w-full max-w-xl rounded-xl border border-primary-container/20 bg-primary-fixed p-lg text-on-primary-fixed shadow-xl"
+				className="w-full max-w-xl rounded-xl border border-outline-variant bg-surface-container p-lg text-on-surface shadow-xl"
 				role="dialog">
 				<div className="flex items-start gap-md">
-					<div className="rounded-full bg-primary p-2 text-white">
+					<div className="rounded-full bg-primary-container p-2 text-on-primary-container">
 						<span className="material-symbols-outlined">
 							check_circle
 						</span>
@@ -302,7 +311,7 @@ export function SuccessDialog({
 							</h2>
 							<button
 								aria-label="Close dialog"
-								className="rounded-full p-xs text-primary hover:bg-surface/40"
+								className="rounded-full p-xs text-outline hover:bg-surface-container-high hover:text-primary"
 								onClick={onClose}
 								type="button">
 								<span className="material-symbols-outlined">
@@ -314,7 +323,7 @@ export function SuccessDialog({
 							Your poll is live. Share this link with your
 							participants.
 						</p>
-						<div className="flex flex-col gap-md rounded-lg border border-primary-container/20 bg-surface/50 p-md md:flex-row md:items-center md:justify-between">
+						<div className="flex flex-col gap-md rounded-lg border border-outline-variant bg-surface-container-low p-md md:flex-row md:items-center md:justify-between">
 							<code className="break-all font-label-lg text-primary">
 								{pollLink}
 							</code>
@@ -330,9 +339,9 @@ export function SuccessDialog({
 						</div>
 						<button
 							className="mt-lg rounded-full bg-surface-container-low px-6 py-3 font-label-lg font-bold text-primary transition-colors hover:bg-surface-container-high"
-							onClick={onClose}
+							onClick={onDone}
 							type="button">
-							Done
+							Go to My Polls
 						</button>
 					</div>
 				</div>

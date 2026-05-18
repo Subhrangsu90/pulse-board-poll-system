@@ -396,6 +396,7 @@ export default function CreatePoll() {
 					<ReviewPublishStep
 						isPublishDialogOpen={isPublishDialogOpen}
 						onClosePublishDialog={() => setIsPublishDialogOpen(false)}
+						onFinishPublish={() => void navigate({ to: "/polls" })}
 						pollId={createdPollId}
 						publicSlug={createdPollSlug}
 						questions={questions}
