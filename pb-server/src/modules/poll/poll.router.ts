@@ -7,5 +7,12 @@ import * as controller from "./poll.controller";
 export const pollRouter: Router = express.Router();
 
 pollRouter.post("/polls", requireAuth, asyncHandler(controller.createPolls));
+pollRouter.post("/polls/:pollId/questions", requireAuth, asyncHandler(controller.addQuestionToPoll));
+pollRouter.post("/polls/:pollId/publish", requireAuth, asyncHandler(controller.publishPoll));
+pollRouter.patch("/polls/:pollId", requireAuth, asyncHandler(controller.updatePoll));
 pollRouter.patch("/polls/:pollId/complete", requireAuth, asyncHandler(controller.completePoll));
+pollRouter.delete("/polls/:pollId", requireAuth, asyncHandler(controller.deletePoll));
+pollRouter.put("/questions/:questionId", requireAuth, asyncHandler(controller.updateQuestion));
+pollRouter.delete("/questions/:questionId", requireAuth, asyncHandler(controller.deleteQuestion));
+pollRouter.get("/polls/:pollId", requireAuth, asyncHandler(controller.getPollById));
 pollRouter.get("/polls", requireAuth, asyncHandler(controller.getAllPolls));

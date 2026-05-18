@@ -51,5 +51,20 @@ export async function apiPost<T>(path: string, payload?: unknown): Promise<T> {
 	return data.data;
 }
 
+export async function apiPut<T>(path: string, payload?: unknown): Promise<T> {
+	const { data } = await api.put<ApiResponse<T>>(path, payload);
+	return data.data;
+}
+
+export async function apiPatch<T>(path: string, payload?: unknown): Promise<T> {
+	const { data } = await api.patch<ApiResponse<T>>(path, payload);
+	return data.data;
+}
+
+export async function apiDelete<T>(path: string): Promise<T> {
+	const { data } = await api.delete<ApiResponse<T>>(path);
+	return data.data;
+}
+
 export { API_BASE_URL };
 export type { ApiResponse };

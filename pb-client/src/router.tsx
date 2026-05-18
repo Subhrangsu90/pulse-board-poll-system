@@ -53,6 +53,12 @@ const createPollRoute = createRoute({
 	component: CreatePoll,
 });
 
+const editPollRoute = createRoute({
+	getParentRoute: () => workspaceRoute,
+	path: "/polls/$pollId/edit",
+	component: CreatePoll,
+});
+
 const profileRoute = createRoute({
 	getParentRoute: () => workspaceRoute,
 	path: "/profile",
@@ -73,6 +79,7 @@ const routeTree = rootRoute.addChildren([
 		draftsRoute,
 		settingsRoute,
 		createPollRoute,
+		editPollRoute,
 		profileRoute,
 	]),
 	landingRoute,

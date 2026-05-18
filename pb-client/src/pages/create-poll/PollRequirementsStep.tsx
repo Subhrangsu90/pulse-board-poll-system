@@ -6,6 +6,15 @@ type PollRequirementsStepProps = {
 	onChange: (requirements: Partial<PollRequirements>) => void;
 };
 
+function normalizeSlug(value: string) {
+	return value
+		.toLowerCase()
+		.trim()
+		.replace(/[^a-z0-9-]+/g, "-")
+		.replace(/-+/g, "-")
+		.replace(/^-|-$/g, "");
+}
+
 export function PollRequirementsStep({
 	requirements,
 	onChange,
@@ -47,6 +56,44 @@ export function PollRequirementsStep({
 						rows={3}
 						value={requirements.description}
 					/>
+				</div>
+
+				<div className="grid grid-cols-1 gap-md md:grid-cols-2">
+					<div className="flex flex-col gap-2">
+						<label
+							className="font-sans text-label-lg text-primary"
+							htmlFor="poll-tags">
+							Tags
+						</label>
+						<input
+							className="w-full rounded-none border-x-0 border-b-2 border-t-0 border-outline bg-surface-container-low px-2 py-3 font-sans text-body-md transition-colors placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-0"
+							id="poll-tags"
+							onChange={(event) =>
+								onChange({ tags: event.target.value })
+							}
+							placeholder="team, feedback, planning"
+							type="text"
+							value={requirements.tags}
+						/>
+					</div>
+
+					<div className="flex flex-col gap-2">
+						<label
+							className="font-sans text-label-lg text-primary"
+							htmlFor="poll-slug">
+							Public Slug
+						</label>
+						<input
+							className="w-full rounded-none border-x-0 border-b-2 border-t-0 border-outline bg-surface-container-low px-2 py-3 font-sans text-body-md transition-colors placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-0"
+							id="poll-slug"
+							onChange={(event) =>
+								onChange({ publicSlug: normalizeSlug(event.target.value) })
+							}
+							placeholder="remote-work-2026"
+							type="text"
+							value={requirements.publicSlug}
+						/>
+					</div>
 				</div>
 			</section>
 

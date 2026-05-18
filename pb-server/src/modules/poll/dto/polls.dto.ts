@@ -34,12 +34,6 @@ export const createPollBodySchema = z
 			.refine((date) => date > new Date(), "expiresAt must be in the future.")
 			.describe("Expiration date and time for the poll."),
 
-		isPublished: z
-			.boolean()
-			.optional()
-			.default(false)
-			.describe("Indicates whether the poll is publicly visible."),
-
 		publicSlug: z
 			.string()
 			.trim()
@@ -49,16 +43,48 @@ export const createPollBodySchema = z
 
 		questions: z
 			.array(questionSchema)
-			.min(1, "At least one question is required.")
 			.max(50, "Maximum 50 questions allowed.")
+			.optional()
+			.default([])
 			.describe("Collection of questions included in the poll."),
 	})
-	.describe("Schema for creating a poll with questions and options.");
+	.describe("Schema for creating a draft poll.");
+
+export const updatePollBodySchema = z
+	.object({
+		title: z.string().trim().min(1, "Title is required.").max(255).optional(),
+
+		description: z.string().trim().optional(),
+
+		tags: z
+			.array(z.string().trim())
+			.optional()
+			.transform((tags) => tags?.filter(Boolean)),
+
+		responseMode: responseModeSchema.optional(),
+
+		expiresAt: z.coerce
+			.date({
+				error: "expiresAt must be a valid date.",
+			})
+			.refine((date) => date > new Date(), "expiresAt must be in the future.")
+			.optional(),
+
+		publicSlug: z.string().trim().min(1, "Slug must not be empty.").optional(),
+	})
+	.refine((body) => Object.keys(body).length > 0, "At least one field is required.")
+	.describe("Schema for updating poll details.");
 
 export type CreatePollBody = z.infer<typeof createPollBodySchema>;
+export type UpdatePollBody = z.infer<typeof updatePollBodySchema>;
 
 export type CreatePollInput = CreatePollBody & {
 	creatorId: string;
+};
+
+export type UpdatePollInput = UpdatePollBody & {
+	creatorId: string;
+	pollId: string;
 };
 
 export type PollStatus = z.infer<typeof pollStatusSchema>;
