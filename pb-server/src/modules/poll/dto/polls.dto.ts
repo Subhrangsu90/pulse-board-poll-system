@@ -1,35 +1,64 @@
-import { sql } from "drizzle-orm";
-import {
-	boolean,
-	pgEnum,
-	pgTable,
-	text,
-	timestamp,
-	uuid,
-	varchar,
-} from "drizzle-orm/pg-core";
-import { users } from "../../auth/dto/user.dto";
+import { z } from "zod";
+import { questionSchema } from "./questions.dto";
 
-export const pollResponseModeEnum = pgEnum("poll_response_mode", ["anonymous", "authenticated"]);
+export const responseModeSchema = z
+	.enum(["anonymous", "authenticated"])
+	.describe("Defines whether poll responses are anonymous or authenticated.");
 
-export const pollStatusEnum = pgEnum("poll_status", ["draft", "active", "expired", "completed"]);
+export const pollStatusSchema = z
+	.enum(["draft", "active", "expired", "completed"])
+	.describe("Current lifecycle status of the poll.");
 
-export const polls = pgTable("polls", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	creatorId: uuid("creator_id")
-		.notNull()
-		.references(() => users.id, { onDelete: "cascade" }),
-	title: varchar("title", { length: 255 }).notNull(),
-	description: text("description"),
-	tags: text("tags")
-		.array()
-		.notNull()
-		.default(sql`'{}'::text[]`),
-	responseMode: pollResponseModeEnum("response_mode").notNull(),
-	expiresAt: timestamp("expires_at").notNull(),
-	isPublished: boolean("is_published").default(false),
-	status: pollStatusEnum("status").default("draft"),
-	publicSlug: varchar("public_slug", { length: 255 }).unique(),
-	createdAt: timestamp("created_at").defaultNow(),
-	updatedAt: timestamp("updated_at").defaultNow(),
-});
+export const createPollBodySchema = z
+	.object({
+		title: z.string().trim().min(1, "Title is required.").max(255).describe("Title of the poll."),
+
+		description: z
+			.string()
+			.trim()
+			.optional()
+			.describe("Optional detailed description of the poll."),
+
+		tags: z
+			.array(z.string().trim())
+			.optional()
+			.transform((tags) => tags?.filter(Boolean) ?? [])
+			.describe("Optional list of tags associated with the poll."),
+
+		responseMode: responseModeSchema.describe("Controls how users submit responses."),
+
+		expiresAt: z.coerce
+			.date({
+				error: "expiresAt must be a valid date.",
+			})
+			.refine((date) => date > new Date(), "expiresAt must be in the future.")
+			.describe("Expiration date and time for the poll."),
+
+		isPublished: z
+			.boolean()
+			.optional()
+			.default(false)
+			.describe("Indicates whether the poll is publicly visible."),
+
+		publicSlug: z
+			.string()
+			.trim()
+			.min(1, "Slug must not be empty.")
+			.optional()
+			.describe("Public unique slug used in poll URLs."),
+
+		questions: z
+			.array(questionSchema)
+			.min(1, "At least one question is required.")
+			.max(50, "Maximum 50 questions allowed.")
+			.describe("Collection of questions included in the poll."),
+	})
+	.describe("Schema for creating a poll with questions and options.");
+
+export type CreatePollBody = z.infer<typeof createPollBodySchema>;
+
+export type CreatePollInput = CreatePollBody & {
+	creatorId: string;
+};
+
+export type PollStatus = z.infer<typeof pollStatusSchema>;

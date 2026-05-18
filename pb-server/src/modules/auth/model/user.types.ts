@@ -1,4 +1,4 @@
-import type { users } from "../dto/user.dto";
+import type { users } from "./user.model";
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { badRequest, unauthorized } from "../../common/utils/api.error";
 import { created, ok } from "../../common/utils/api.response";
 import { parseSchema } from "../../common/utils/validation";
-import { createPollBodySchema } from "./model/poll.type";
+import { createPollBodySchema } from "./dto/polls.dto";
 import * as pollService from "./poll.service";
 
 function getPollId(req: Request) {

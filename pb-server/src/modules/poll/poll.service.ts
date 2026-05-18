@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq, lte } from "drizzle-orm";
 import { db } from "../../common/config/db";
 import { notFound } from "../../common/utils/api.error";
-import { polls } from "./dto/polls.dto";
-import type { CreatePollInput } from "./model/poll.type";
+import type { CreatePollInput } from "./dto/polls.dto";
+import { polls } from "./model/polls.model";
 
 function normalizePublicSlug(value?: string): string {
 	if (value !== undefined) {

@@ -20,9 +20,11 @@ export function PollRequirementsStep({
 						Title
 					</label>
 					<input
-						className="w-full rounded-none border-x-0 border-b-2 border-t-0 border-outline bg-surface-container-low px-0 py-3 font-serif text-title-lg transition-colors placeholder:text-outline-variant focus:border-primary focus:ring-0"
+						className="w-full rounded-none border-x-0 border-b-2 border-t-0 border-outline bg-surface-container-low px-2 py-3 font-serif text-title-lg transition-colors placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-0"
 						id="poll-title"
-						onChange={(event) => onChange({ title: event.target.value })}
+						onChange={(event) =>
+							onChange({ title: event.target.value })
+						}
 						placeholder="e.g., The Future of Remote Deep Work"
 						type="text"
 						value={requirements.title}
@@ -36,7 +38,7 @@ export function PollRequirementsStep({
 						Description
 					</label>
 					<textarea
-						className="w-full resize-none rounded-none border-x-0 border-b-2 border-t-0 border-outline bg-surface-container-low px-0 py-3 font-sans text-body-md transition-colors placeholder:text-outline-variant focus:border-primary focus:ring-0"
+						className="w-full resize-none rounded-none border-x-0 border-b-2 border-t-0 border-outline bg-surface-container-low px-2 py-3 font-sans text-body-md transition-colors placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-0"
 						id="poll-description"
 						onChange={(event) =>
 							onChange({ description: event.target.value })
@@ -56,12 +58,19 @@ export function PollRequirementsStep({
 						</label>
 						<div className="flex rounded-full border border-outline-variant bg-surface-container-low p-1">
 							<ResponseModeButton
-								isActive={requirements.responseMode === "anonymous"}
+								isActive={
+									requirements.responseMode === "anonymous"
+								}
 								label="Anonymous"
-								onClick={() => onChange({ responseMode: "anonymous" })}
+								onClick={() =>
+									onChange({ responseMode: "anonymous" })
+								}
 							/>
 							<ResponseModeButton
-								isActive={requirements.responseMode === "authenticated"}
+								isActive={
+									requirements.responseMode ===
+									"authenticated"
+								}
 								label="Authenticated"
 								onClick={() =>
 									onChange({ responseMode: "authenticated" })
@@ -70,7 +79,8 @@ export function PollRequirementsStep({
 						</div>
 					</div>
 					<p className="font-sans text-label-md italic text-on-surface-variant">
-						Anonymous responses encourage higher honesty in sensitive topics.
+						Anonymous responses encourage higher honesty in
+						sensitive topics.
 					</p>
 				</section>
 
@@ -81,9 +91,11 @@ export function PollRequirementsStep({
 					<div className="grid grid-cols-2 gap-md">
 						<div className="relative">
 							<input
-								className="w-full appearance-none rounded-none border-x-0 border-b-2 border-t-0 border-outline bg-surface-container-low px-0 py-3 font-sans text-body-md focus:border-primary focus:ring-0"
+								className="w-full appearance-none rounded-none border-x-0 border-b-2 border-t-0 border-outline bg-surface-container-low px-2 py-3 font-sans text-body-md focus:outline-none focus:border-primary focus:ring-0"
 								onChange={(event) =>
-									onChange({ expiresDate: event.target.value })
+									onChange({
+										expiresDate: event.target.value,
+									})
 								}
 								type="date"
 								value={requirements.expiresDate}
@@ -94,9 +106,11 @@ export function PollRequirementsStep({
 						</div>
 						<div className="relative">
 							<input
-								className="w-full appearance-none rounded-none border-x-0 border-b-2 border-t-0 border-outline bg-surface-container-low px-0 py-3 font-sans text-body-md focus:border-primary focus:ring-0"
+								className="w-full appearance-none rounded-none border-x-0 border-b-2 border-t-0 border-outline bg-surface-container-low px-2 py-3 font-sans text-body-md focus:outline-none focus:border-primary focus:ring-0"
 								onChange={(event) =>
-									onChange({ expiresTime: event.target.value })
+									onChange({
+										expiresTime: event.target.value,
+									})
 								}
 								type="time"
 								value={requirements.expiresTime}

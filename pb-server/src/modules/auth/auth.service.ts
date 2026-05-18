@@ -5,7 +5,7 @@ import { db } from "../../common/config/db";
 import { getIssuer, getRedirectUri, parseCookies } from "../../common/utils/auth.utils";
 import { env } from "../../config/env";
 import type { TokenResponse } from "./model/auth.types";
-import { users } from "./dto/user.dto";
+import { users } from "./model/user.model";
 import type { CurrentUser, NewUser, OidcUserInfo, User } from "./model/user.types";
 export const STATE_COOKIE_NAME = "pb_auth_state";
 export const AUTH_COOKIE_NAME = "pb_auth_token";

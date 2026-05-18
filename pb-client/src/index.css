@@ -116,3 +116,10 @@
         @apply selection:bg-primary-fixed selection:text-on-primary-fixed;
     }
 }
+
+/* Hides the icon for both date and time inputs */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    display: none;
+    -webkit-appearance: none;
+}
