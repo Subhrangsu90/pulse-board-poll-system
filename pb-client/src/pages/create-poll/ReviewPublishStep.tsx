@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Dialog } from "../../components/Dialog";
+import { useToast } from "../../components/toastContext";
 import type { PollRequirements, SavedQuestion } from "./types";
 
 type ReviewPublishStepProps = {
@@ -45,6 +46,7 @@ export function ReviewPublishStep({
 	onClosePublishDialog,
 	onFinishPublish,
 }: ReviewPublishStepProps) {
+	const toast = useToast();
 	const [copyLabel, setCopyLabel] = useState("Copy Link");
 	const pollLink = getPollLink(
 		publicSlug || requirements.publicSlug || null,
@@ -58,9 +60,15 @@ export function ReviewPublishStep({
 	const copyPollLink = async () => {
 		if (!pollId) return;
 
-		await navigator.clipboard.writeText(pollLink);
-		setCopyLabel("Copied");
-		window.setTimeout(() => setCopyLabel("Copy Link"), 1500);
+		try {
+			await navigator.clipboard.writeText(pollLink);
+			setCopyLabel("Copied");
+			toast.success("Poll link copied.");
+			window.setTimeout(() => setCopyLabel("Copy Link"), 1500);
+		} catch (copyError) {
+			console.error("Unable to copy poll link:", copyError);
+			toast.error("Unable to copy poll link.");
+		}
 	};
 
 	return (

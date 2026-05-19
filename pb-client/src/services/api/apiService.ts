@@ -11,6 +11,12 @@ type ApiResponse<T> = {
 	data: T;
 };
 
+type ApiErrorResponse = {
+	message?: string;
+	error?: string;
+	errors?: Array<{ message?: string }> | Record<string, string[] | string>;
+};
+
 export const api = axios.create({
 	baseURL: API_BASE_URL,
 	withCredentials: true,
@@ -75,6 +81,28 @@ export async function apiPatch<T>(path: string, payload?: unknown): Promise<T> {
 export async function apiDelete<T>(path: string): Promise<T> {
 	const { data } = await api.delete<ApiResponse<T>>(path);
 	return data.data;
+}
+
+export function getApiErrorMessage(error: unknown, fallbackMessage: string) {
+	if (!axios.isAxiosError<ApiErrorResponse>(error)) return fallbackMessage;
+
+	const responseData = error.response?.data;
+	const firstArrayError = Array.isArray(responseData?.errors)
+		? responseData.errors.find((fieldError) => fieldError.message)?.message
+		: null;
+	const firstObjectError =
+		responseData?.errors && !Array.isArray(responseData.errors)
+			? Object.values(responseData.errors).flat()[0]
+			: null;
+
+	return (
+		firstArrayError ||
+		firstObjectError ||
+		responseData?.message ||
+		responseData?.error ||
+		error.message ||
+		fallbackMessage
+	);
 }
 
 export { API_BASE_URL };

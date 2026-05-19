@@ -1,4 +1,5 @@
 import { type DragEvent, type FormEvent, useState } from "react";
+import { useToast } from "../../components/toastContext";
 import type { QuestionType, SavedQuestion } from "./types";
 
 type DraftQuestionOption = {
@@ -36,6 +37,7 @@ export function QuestionsConfigurationStep({
 	onUpdateQuestion,
 	onDeleteQuestion,
 }: QuestionsConfigurationStepProps) {
+	const toast = useToast();
 	const [questionText, setQuestionText] = useState("");
 	const [questionType, setQuestionType] = useState<QuestionType>("single_choice");
 	const [isRequired, setIsRequired] = useState(true);
@@ -46,6 +48,11 @@ export function QuestionsConfigurationStep({
 	]);
 	const [draggedOptionIndex, setDraggedOptionIndex] = useState<number | null>(null);
 	const [error, setError] = useState<string | null>(null);
+
+	const showError = (message: string) => {
+		setError(message);
+		toast.error(message);
+	};
 
 	function createDraftOption(): DraftQuestionOption {
 		return {
@@ -132,17 +139,17 @@ export function QuestionsConfigurationStep({
 			.filter((option) => option.optionText);
 
 		if (!pollId) {
-			setError("Create the draft poll before adding questions.");
+			showError("Create the draft poll before adding questions.");
 			return;
 		}
 
 		if (!questionText.trim()) {
-			setError("Question text is required.");
+			showError("Question text is required.");
 			return;
 		}
 
 		if (cleanedOptions.length < 2) {
-			setError("Add at least two options.");
+			showError("Add at least two options.");
 			return;
 		}
 

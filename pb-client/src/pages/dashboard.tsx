@@ -1,8 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useToast } from "../components/toastContext";
+import { getApiErrorMessage } from "../services/api/apiService";
 import { pollService, type Poll } from "../services/api/pollService";
 
 export default function Dashboard() {
+	const toast = useToast();
 	const [polls, setPolls] = useState<Poll[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -12,11 +15,12 @@ export default function Dashboard() {
 			.then(setPolls)
 			.catch((error) => {
 				console.error("Unable to fetch polls:", error);
+				toast.error(getApiErrorMessage(error, "Unable to fetch polls."));
 			})
 			.finally(() => {
 				setIsLoading(false);
 			});
-	}, []);
+	}, [toast]);
 
 	const activePolls = polls.filter((poll) => poll.status === "active");
 	const draftPolls = polls.filter((poll) => poll.status === "draft");

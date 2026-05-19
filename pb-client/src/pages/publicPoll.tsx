@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Dialog } from "../components/Dialog";
+import { useToast } from "../components/toastContext";
 import { authService, type CurrentUser } from "../services/api/authService";
+import { getApiErrorMessage } from "../services/api/apiService";
 import { pollService, type PublicPoll } from "../services/api/pollService";
 
 type Answers = Record<string, string | string[]>;
@@ -21,6 +23,7 @@ function getInitials(user: CurrentUser) {
 }
 
 export default function PublicPoll() {
+	const toast = useToast();
 	const slug = getSlugFromPath();
 	const [poll, setPoll] = useState<PublicPoll | null>(null);
 	const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -30,6 +33,14 @@ export default function PublicPoll() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitted, setIsSubmitted] = useState(false);
+
+	const showError = useCallback(
+		(message: string) => {
+			setError(message);
+			toast.error(message);
+		},
+		[toast],
+	);
 
 	useEffect(() => {
 		void (async () => {
@@ -43,12 +54,17 @@ export default function PublicPoll() {
 				setPoll(await pollService.getPublicPollBySlug(slug));
 			} catch (loadError) {
 				console.error("Unable to load public poll:", loadError);
-				setError("This poll is not available.");
+				showError(
+					getApiErrorMessage(
+						loadError,
+						"This poll is not available.",
+					),
+				);
 			} finally {
 				setIsLoading(false);
 			}
 		})();
-	}, [slug]);
+	}, [showError, slug]);
 
 	const checkCurrentUser = useCallback(async () => {
 		setIsCheckingAuth(true);
@@ -68,7 +84,10 @@ export default function PublicPoll() {
 	}, []);
 
 	useEffect(() => {
-		void checkCurrentUser();
+		void (async () => {
+			await Promise.resolve();
+			await checkCurrentUser();
+		})();
 
 		const handlePageShow = () => {
 			void checkCurrentUser();
@@ -114,7 +133,7 @@ export default function PublicPoll() {
 		});
 
 		if (unansweredRequiredQuestion) {
-			setError("Please answer all required questions.");
+			showError("Please answer all required questions.");
 			return false;
 		}
 
@@ -131,7 +150,7 @@ export default function PublicPoll() {
 			if (!verifiedUser) {
 				setCurrentUser(null);
 				setIsSubmitted(false);
-				setError("Please sign in before submitting this poll.");
+				showError("Please sign in before submitting this poll.");
 				return;
 			}
 		}
@@ -152,9 +171,17 @@ export default function PublicPoll() {
 			setError(null);
 			setIsSubmitted(true);
 		} catch (submitError) {
-			console.error("Unable to submit public poll response:", submitError);
+			console.error(
+				"Unable to submit public poll response:",
+				submitError,
+			);
 			setIsSubmitted(false);
-			setError("Unable to submit response. Please try again.");
+			showError(
+				getApiErrorMessage(
+					submitError,
+					"Unable to submit response. Please try again.",
+				),
+			);
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -216,154 +243,160 @@ export default function PublicPoll() {
 			<div className="mx-auto grid max-w-6xl grid-cols-1 gap-gutter px-md py-xl lg:grid-cols-[minmax(0,1fr)_22rem]">
 				<div className="space-y-lg">
 					<header className="rounded-xl border border-outline-variant bg-surface-container-lowest p-xl shadow-popover">
-					<div id="poll-summary" />
-					<div className="mb-md flex flex-wrap items-center gap-xs">
-						<span className="rounded-full bg-primary-fixed px-3 py-1 font-label-md text-label-md text-on-primary-fixed">
-							{poll.responseMode === "authenticated"
-								? "Verified responses"
-								: "Anonymous responses"}
-						</span>
-						<span className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant">
-							{poll.questions.length}{" "}
-							{poll.questions.length === 1
-								? "question"
-								: "questions"}
-						</span>
-						{poll.tags.map((tag) => (
-							<span
-								className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant"
-								key={tag}>
-								{tag}
+						<div id="poll-summary" />
+						<div className="mb-md flex flex-wrap items-center gap-xs">
+							<span className="rounded-full bg-primary-fixed px-3 py-1 font-label-md text-label-md text-on-primary-fixed">
+								{poll.responseMode === "authenticated"
+									? "Verified responses"
+									: "Anonymous responses"}
 							</span>
-						))}
-					</div>
-					<h1 className="mb-sm font-serif text-display-md text-primary">
-						{poll.title}
-					</h1>
-					{poll.description ? (
-						<p className="font-body-lg text-body-lg text-on-surface-variant">
-							{poll.description}
-						</p>
-					) : null}
-					<div className="mt-lg grid grid-cols-1 gap-sm border-t border-outline-variant pt-lg md:grid-cols-3">
-						<SummaryMetric
-							icon="event"
-							label="Closes"
-							value={new Date(poll.expiresAt).toLocaleString()}
-						/>
-						<SummaryMetric
-							icon="task_alt"
-							label="Required"
-							value={`${requiredCount} question${requiredCount === 1 ? "" : "s"}`}
-						/>
-						<SummaryMetric
-							icon="how_to_reg"
-							label="Access"
-							value={
-								requiresAuthentication
-									? "Sign-in required"
-									: "Open response"
-							}
-						/>
-					</div>
-				</header>
+							<span className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant">
+								{poll.questions.length}{" "}
+								{poll.questions.length === 1
+									? "question"
+									: "questions"}
+							</span>
+							{poll.tags.map((tag) => (
+								<span
+									className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant"
+									key={tag}>
+									{tag}
+								</span>
+							))}
+						</div>
+						<h1 className="mb-sm font-serif text-display-md text-primary">
+							{poll.title}
+						</h1>
+						{poll.description ? (
+							<p className="font-body-lg text-body-lg text-on-surface-variant">
+								{poll.description}
+							</p>
+						) : null}
+						<div className="mt-lg grid grid-cols-1 gap-sm border-t border-outline-variant pt-lg md:grid-cols-3">
+							<SummaryMetric
+								icon="event"
+								label="Closes"
+								value={new Date(
+									poll.expiresAt,
+								).toLocaleString()}
+							/>
+							<SummaryMetric
+								icon="task_alt"
+								label="Required"
+								value={`${requiredCount} question${requiredCount === 1 ? "" : "s"}`}
+							/>
+							<SummaryMetric
+								icon="how_to_reg"
+								label="Access"
+								value={
+									requiresAuthentication
+										? "Sign-in required"
+										: "Open response"
+								}
+							/>
+						</div>
+					</header>
 
-				{isCheckingAuth && requiresAuthentication ? (
-					<section className="rounded-xl border border-outline-variant bg-surface-container p-xl text-center">
-						<p className="font-body-md text-on-surface-variant">
-							Checking response access...
-						</p>
-					</section>
-				) : (
-					<section className="space-y-lg">
-						{poll.questions.map((question, questionIndex) => (
-							<article
-								className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg shadow-sm"
-								key={question.id}>
-								<div className="mb-md flex flex-wrap items-center gap-sm">
-									<span className="rounded-full bg-secondary-container px-3 py-1 font-label-md text-label-md text-on-secondary-container">
-										Question {questionIndex + 1}
-									</span>
-									<span className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant">
-										{question.questionType ===
-										"multiple_choice"
-											? "Choose multiple"
-											: "Choose one"}
-									</span>
-									{question.isRequired ? (
-										<span className="rounded-full bg-primary-container px-3 py-1 font-label-md text-label-md text-on-primary-container">
-											Required
+					{isCheckingAuth && requiresAuthentication ? (
+						<section className="rounded-xl border border-outline-variant bg-surface-container p-xl text-center">
+							<p className="font-body-md text-on-surface-variant">
+								Checking response access...
+							</p>
+						</section>
+					) : (
+						<section className="space-y-lg">
+							{poll.questions.map((question, questionIndex) => (
+								<article
+									className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg shadow-sm"
+									key={question.id}>
+									<div className="mb-md flex flex-wrap items-center gap-sm">
+										<span className="rounded-full bg-secondary-container px-3 py-1 font-label-md text-label-md text-on-secondary-container">
+											Question {questionIndex + 1}
 										</span>
-									) : null}
-								</div>
-								<h2 className="mb-md font-title-lg text-title-lg text-on-surface">
-									{question.questionText}
-								</h2>
+										<span className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant">
+											{question.questionType ===
+											"multiple_choice"
+												? "Choose multiple"
+												: "Choose one"}
+										</span>
+										{question.isRequired ? (
+											<span className="rounded-full bg-primary-container px-3 py-1 font-label-md text-label-md text-on-primary-container">
+												Required
+											</span>
+										) : null}
+									</div>
+									<h2 className="mb-md font-title-lg text-title-lg text-on-surface">
+										{question.questionText}
+									</h2>
 
-								<div className="space-y-sm">
-									{question.options.map((option) => {
-										const answer = answers[question.id];
-										const isSelected = Array.isArray(answer)
-											? answer.includes(option.id)
-											: answer === option.id;
+									<div className="space-y-sm">
+										{question.options.map((option) => {
+											const answer = answers[question.id];
+											const isSelected = Array.isArray(
+												answer,
+											)
+												? answer.includes(option.id)
+												: answer === option.id;
 
-										return (
-											<button
-												className={`flex w-full items-center justify-between rounded-xl border p-md text-left transition-colors ${
-													isSelected
-														? "border-primary bg-primary-container text-on-primary-container"
-														: "border-outline-variant bg-surface-container-lowest hover:border-primary"
-												}`}
-												key={option.id}
-												disabled={isResponseLocked}
-												onClick={() =>
-													question.questionType ===
-													"multiple_choice"
-														? toggleMultiple(
-																question.id,
-																option.id,
-															)
-														: selectSingle(
-																question.id,
-																option.id,
-															)
-												}
-												type="button">
-												<span className="font-body-lg text-body-lg">
-													{option.optionText}
-												</span>
-												<span className="material-symbols-outlined">
-													{question.questionType ===
-													"multiple_choice"
-														? isSelected
-															? "check_box"
-															: "check_box_outline_blank"
-														: isSelected
-															? "radio_button_checked"
-															: "radio_button_unchecked"}
-												</span>
-											</button>
-										);
-									})}
-								</div>
-							</article>
-						))}
+											return (
+												<button
+													className={`flex w-full items-center justify-between rounded-xl border p-md text-left transition-colors ${
+														isSelected
+															? "border-primary bg-primary-container text-on-primary-container"
+															: "border-outline-variant bg-surface-container-lowest hover:border-primary"
+													}`}
+													key={option.id}
+													disabled={isResponseLocked}
+													onClick={() =>
+														question.questionType ===
+														"multiple_choice"
+															? toggleMultiple(
+																	question.id,
+																	option.id,
+																)
+															: selectSingle(
+																	question.id,
+																	option.id,
+																)
+													}
+													type="button">
+													<span className="font-body-lg text-body-lg">
+														{option.optionText}
+													</span>
+													<span className="material-symbols-outlined">
+														{question.questionType ===
+														"multiple_choice"
+															? isSelected
+																? "check_box"
+																: "check_box_outline_blank"
+															: isSelected
+																? "radio_button_checked"
+																: "radio_button_unchecked"}
+													</span>
+												</button>
+											);
+										})}
+									</div>
+								</article>
+							))}
 
-						{error ? (
+							{/* {error ? (
 							<p className="rounded-md bg-error-container px-md py-sm font-body-md text-on-error-container">
 								{error}
 							</p>
-						) : null}
+						) : null} */}
 
-						<button
-							className="w-full rounded-full bg-primary-container px-xl py-4 font-label-lg font-bold text-on-primary-container transition-all hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
-							disabled={isResponseLocked}
-							onClick={() => void submitPoll()}
-							type="button">
-							{isSubmitting ? "Submitting..." : "Submit Response"}
-						</button>
-					</section>
-				)}
+							<button
+								className="w-full rounded-full bg-primary-container px-xl py-4 font-label-lg font-bold text-on-primary-container transition-all hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+								disabled={isResponseLocked}
+								onClick={() => void submitPoll()}
+								type="button">
+								{isSubmitting
+									? "Submitting..."
+									: "Submit Response"}
+							</button>
+						</section>
+					)}
 				</div>
 
 				<aside className="space-y-lg lg:sticky lg:top-lg lg:self-start">
@@ -382,7 +415,9 @@ export default function PublicPoll() {
 			</div>
 
 			<AuthRequiredDialog
-				isOpen={!isCheckingAuth && requiresAuthentication && !currentUser}
+				isOpen={
+					!isCheckingAuth && requiresAuthentication && !currentUser
+				}
 			/>
 
 			<ResponseSubmittedDialog
@@ -508,7 +543,9 @@ function ResponseProgressCard({
 	requiredCount: number;
 }) {
 	const progressPercent =
-		questionCount === 0 ? 0 : Math.round((answeredCount / questionCount) * 100);
+		questionCount === 0
+			? 0
+			: Math.round((answeredCount / questionCount) * 100);
 
 	return (
 		<section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg shadow-sm">

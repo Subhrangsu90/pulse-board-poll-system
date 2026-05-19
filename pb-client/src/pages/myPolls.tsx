@@ -1,5 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useToast } from "../components/toastContext";
+import { getApiErrorMessage } from "../services/api/apiService";
 import { pollService, type Poll, type UpdatePollPayload } from "../services/api/pollService";
 
 type SortMode = "recent" | "status" | "expiry";
@@ -63,14 +65,19 @@ function downloadPoll(poll: Poll) {
 
 export default function MyPolls() {
 	const navigate = useNavigate();
+	const toast = useToast();
 	const [polls, setPolls] = useState<Poll[]>([]);
 	const [sortMode, setSortMode] = useState<SortMode>("recent");
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [copyMessage, setCopyMessage] = useState<string | null>(null);
 	const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
 	const [editForm, setEditForm] = useState<EditForm | null>(null);
+
+	const showError = useCallback((message: string) => {
+		setError(message);
+		toast.error(message);
+	}, [toast]);
 
 	const sortedPolls = useMemo(() => {
 		const nextPolls = [...polls];
@@ -93,7 +100,7 @@ export default function MyPolls() {
 		);
 	}, [polls, sortMode]);
 
-	const loadPolls = async () => {
+	const loadPolls = useCallback(async () => {
 		setIsLoading(true);
 		setError(null);
 
@@ -101,15 +108,18 @@ export default function MyPolls() {
 			setPolls(await pollService.getAllPolls());
 		} catch (loadError) {
 			console.error("Unable to load polls:", loadError);
-			setError("Unable to load polls.");
+			showError(getApiErrorMessage(loadError, "Unable to load polls."));
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}, [showError]);
 
 	useEffect(() => {
-		void loadPolls();
-	}, []);
+		void (async () => {
+			await Promise.resolve();
+			await loadPolls();
+		})();
+	}, [loadPolls]);
 
 	const replacePoll = (poll: Poll) => {
 		setPolls((currentPolls) =>
@@ -118,9 +128,13 @@ export default function MyPolls() {
 	};
 
 	const copyPollLink = async (poll: Poll) => {
-		await navigator.clipboard.writeText(getPollLink(poll));
-		setCopyMessage("Link copied");
-		window.setTimeout(() => setCopyMessage(null), 1500);
+		try {
+			await navigator.clipboard.writeText(getPollLink(poll));
+			toast.success("Link copied.");
+		} catch (copyError) {
+			console.error("Unable to copy poll link:", copyError);
+			showError("Unable to copy poll link.");
+		}
 	};
 
 	const openEditDialog = (poll: Poll) => {
@@ -158,10 +172,11 @@ export default function MyPolls() {
 
 		try {
 			replacePoll(await pollService.updatePoll(editingPoll.id, payload));
+			toast.success("Poll updated.");
 			closeEditDialog();
 		} catch (updateError) {
 			console.error("Unable to update poll:", updateError);
-			setError("Unable to update poll.");
+			showError(getApiErrorMessage(updateError, "Unable to update poll."));
 		} finally {
 			setIsSaving(false);
 		}
@@ -171,9 +186,15 @@ export default function MyPolls() {
 		setError(null);
 		try {
 			replacePoll(await pollService.publishPoll(poll.id));
+			toast.success("Poll published.");
 		} catch (publishError) {
 			console.error("Unable to publish poll:", publishError);
-			setError("Unable to publish poll. Make sure it has questions and options.");
+			showError(
+				getApiErrorMessage(
+					publishError,
+					"Unable to publish poll. Make sure it has questions and options."
+				)
+			);
 		}
 	};
 
@@ -181,9 +202,10 @@ export default function MyPolls() {
 		setError(null);
 		try {
 			replacePoll(await pollService.completePoll(poll.id));
+			toast.success("Poll archived.");
 		} catch (archiveError) {
 			console.error("Unable to archive poll:", archiveError);
-			setError("Unable to archive poll.");
+			showError(getApiErrorMessage(archiveError, "Unable to archive poll."));
 		}
 	};
 
@@ -194,9 +216,10 @@ export default function MyPolls() {
 		try {
 			await pollService.deletePoll(poll.id);
 			setPolls((currentPolls) => currentPolls.filter((currentPoll) => currentPoll.id !== poll.id));
+			toast.success("Poll deleted.");
 		} catch (deleteError) {
 			console.error("Unable to delete poll:", deleteError);
-			setError("Unable to delete poll.");
+			showError(getApiErrorMessage(deleteError, "Unable to delete poll."));
 		}
 	};
 
@@ -228,12 +251,6 @@ export default function MyPolls() {
 				{error ? (
 					<p className="rounded-md bg-error-container px-md py-sm font-body-md text-on-error-container">
 						{error}
-					</p>
-				) : null}
-
-				{copyMessage ? (
-					<p className="rounded-md bg-primary-container px-md py-sm font-body-md text-on-primary-container">
-						{copyMessage}
 					</p>
 				) : null}
 

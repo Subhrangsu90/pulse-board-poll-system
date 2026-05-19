@@ -1,5 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useToast } from "../components/toastContext";
+import { getApiErrorMessage } from "../services/api/apiService";
 import {
 	pollService,
 	type AddQuestionPayload,
@@ -40,6 +42,7 @@ function toLocalDateInputValue(value: string) {
 
 export default function CreatePoll() {
 	const navigate = useNavigate();
+	const toast = useToast();
 	const editPollId = getEditPollIdFromPath();
 	const isEditMode = Boolean(editPollId);
 	const [currentStep, setCurrentStep] = useState<StepId>(1);
@@ -76,21 +79,26 @@ export default function CreatePoll() {
 		}));
 	};
 
+	const showError = useCallback((message: string) => {
+		setError(message);
+		toast.error(message);
+	}, [toast]);
+
 	const validateRequirements = () => {
 		setError(null);
 
 		if (!requirements.title.trim()) {
-			setError("Title is required.");
+			showError("Title is required.");
 			return false;
 		}
 
 		if (!expiresAt || Number.isNaN(expiresAt.getTime())) {
-			setError("Choose a valid expiry date and time.");
+			showError("Choose a valid expiry date and time.");
 			return false;
 		}
 
 		if (expiresAt <= new Date()) {
-			setError("Expiry must be in the future.");
+			showError("Expiry must be in the future.");
 			return false;
 		}
 
@@ -133,12 +141,12 @@ export default function CreatePoll() {
 				hydrateEditPoll(await pollService.getPollById(editPollId));
 			} catch (loadError) {
 				console.error("Unable to load poll for editing:", loadError);
-				setError("Unable to load poll for editing.");
+				showError(getApiErrorMessage(loadError, "Unable to load poll for editing."));
 			} finally {
 				setIsLoadingEditPoll(false);
 			}
 		})();
-	}, [editPollId]);
+	}, [editPollId, showError]);
 
 	const createDraftPoll = async () => {
 		if (createdPollId) return createdPollId;
@@ -164,7 +172,12 @@ export default function CreatePoll() {
 			return poll.id;
 		} catch (submitError) {
 			console.error("Unable to create draft poll:", submitError);
-			setError("Unable to save poll requirements. Please try again.");
+			showError(
+				getApiErrorMessage(
+					submitError,
+					"Unable to save poll requirements. Please try again."
+				)
+			);
 			return null;
 		} finally {
 			setIsSubmitting(false);
@@ -198,7 +211,12 @@ export default function CreatePoll() {
 			return poll.id;
 		} catch (submitError) {
 			console.error("Unable to save poll requirements:", submitError);
-			setError("Unable to save poll requirements. Please try again.");
+			showError(
+				getApiErrorMessage(
+					submitError,
+					"Unable to save poll requirements. Please try again."
+				)
+			);
 			return null;
 		} finally {
 			setIsSubmitting(false);
@@ -214,7 +232,7 @@ export default function CreatePoll() {
 
 		if (currentStep === 2) {
 			if (questions.length === 0) {
-				setError("Add at least one question before review.");
+				showError("Add at least one question before review.");
 				return;
 			}
 
@@ -256,7 +274,12 @@ export default function CreatePoll() {
 			return true;
 		} catch (submitError) {
 			console.error("Unable to update question:", submitError);
-			setError("Unable to update question. Please try again.");
+			showError(
+				getApiErrorMessage(
+					submitError,
+					"Unable to update question. Please try again."
+				)
+			);
 			return false;
 		} finally {
 			setIsSubmitting(false);
@@ -276,7 +299,12 @@ export default function CreatePoll() {
 			);
 		} catch (submitError) {
 			console.error("Unable to delete question:", submitError);
-			setError("Unable to delete question. Please try again.");
+			showError(
+				getApiErrorMessage(
+					submitError,
+					"Unable to delete question. Please try again."
+				)
+			);
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -316,7 +344,12 @@ export default function CreatePoll() {
 			return true;
 		} catch (submitError) {
 			console.error("Unable to save question:", submitError);
-			setError("Unable to save question. Please try again.");
+			showError(
+				getApiErrorMessage(
+					submitError,
+					"Unable to save question. Please try again."
+				)
+			);
 			return false;
 		} finally {
 			setIsSubmitting(false);
@@ -325,7 +358,7 @@ export default function CreatePoll() {
 
 	const handlePublishPoll = async () => {
 		if (!createdPollId) {
-			setError("Create the draft poll before publishing.");
+			showError("Create the draft poll before publishing.");
 			return;
 		}
 
@@ -338,7 +371,12 @@ export default function CreatePoll() {
 			setIsPublishDialogOpen(true);
 		} catch (submitError) {
 			console.error("Unable to publish poll:", submitError);
-			setError("Unable to publish poll. Check questions and options, then try again.");
+			showError(
+				getApiErrorMessage(
+					submitError,
+					"Unable to publish poll. Check questions and options, then try again."
+				)
+			);
 		} finally {
 			setIsSubmitting(false);
 		}
