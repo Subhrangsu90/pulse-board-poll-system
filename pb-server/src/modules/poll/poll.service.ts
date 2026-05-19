@@ -146,6 +146,66 @@ const getPollById = async (pollId: string, creatorId: string) => {
 	};
 };
 
+const getPublicPollBySlug = async (publicSlug: string) => {
+	await expireDuePolls();
+
+	const [poll] = await db
+		.select()
+		.from(polls)
+		.where(
+			and(
+				eq(polls.publicSlug, publicSlug),
+				eq(polls.status, "active"),
+				eq(polls.isPublished, true)
+			)
+		)
+		.limit(1);
+
+	if (!poll) {
+		throw notFound("Poll not found or not published.");
+	}
+
+	const pollQuestions = await db
+		.select()
+		.from(questions)
+		.where(eq(questions.pollId, poll.id))
+		.orderBy(asc(questions.orderIndex));
+
+	const questionIds = pollQuestions.map((question) => question.id);
+	const pollOptions =
+		questionIds.length > 0
+			? await db
+					.select()
+					.from(options)
+					.where(inArray(options.questionId, questionIds))
+					.orderBy(asc(options.orderIndex))
+			: [];
+
+	return {
+		id: poll.id,
+		title: poll.title,
+		description: poll.description,
+		tags: poll.tags,
+		responseMode: poll.responseMode,
+		expiresAt: poll.expiresAt,
+		publicSlug: poll.publicSlug,
+		questions: pollQuestions.map((question) => ({
+			id: question.id,
+			questionText: question.questionText,
+			questionType: question.questionType,
+			isRequired: question.isRequired,
+			orderIndex: question.orderIndex,
+			options: pollOptions
+				.filter((option) => option.questionId === question.id)
+				.map((option) => ({
+					id: option.id,
+					optionText: option.optionText,
+					orderIndex: option.orderIndex,
+				})),
+		})),
+	};
+};
+
 const updateQuestion = async (questionId: string, creatorId: string, input: QuestionInput) => {
 	const [question] = await db
 		.select({
@@ -359,6 +419,7 @@ export {
 	expireDuePolls,
 	getAllPolls,
 	getPollById,
+	getPublicPollBySlug,
 	publishPoll,
 	updateQuestion,
 	updatePoll,

@@ -21,6 +21,16 @@ export const api = axios.create({
 
 let isRedirectingToLogin = false;
 
+function getLoginUrlWithReturnTo() {
+	const loginUrl = new URL(`${API_BASE_URL}/auth/login`, window.location.origin);
+	loginUrl.searchParams.set(
+		"returnTo",
+		`${window.location.pathname}${window.location.search}${window.location.hash}`
+	);
+
+	return loginUrl.toString();
+}
+
 api.interceptors.response.use(
 	(response) => response,
 	(error) => {
@@ -28,10 +38,11 @@ api.interceptors.response.use(
 			const isPublicPage = window.location.pathname === "/";
 			const requestUrl = error.config?.url ?? "";
 			const isLogoutRequest = requestUrl.includes("/auth/logout");
+			const isCurrentUserRequest = requestUrl.includes("/auth/current-user");
 
-			if (!isPublicPage && !isLogoutRequest && !isRedirectingToLogin) {
+			if (!isPublicPage && !isLogoutRequest && !isCurrentUserRequest && !isRedirectingToLogin) {
 				isRedirectingToLogin = true;
-				window.location.href = `${API_BASE_URL}/auth/login`;
+				window.location.href = getLoginUrlWithReturnTo();
 			}
 		}
 

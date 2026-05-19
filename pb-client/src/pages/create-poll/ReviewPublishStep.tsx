@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Dialog } from "../../components/Dialog";
 import type { PollRequirements, SavedQuestion } from "./types";
 
 type ReviewPublishStepProps = {
@@ -293,59 +294,33 @@ export function SuccessDialog({
 	onDone,
 }: SuccessDialogProps) {
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-md">
-			<div
-				aria-modal="true"
-				className="w-full max-w-xl rounded-xl border border-outline-variant bg-surface-container p-lg text-on-surface shadow-xl"
-				role="dialog">
-				<div className="flex items-start gap-md">
-					<div className="rounded-full bg-primary-container p-2 text-on-primary-container">
-						<span className="material-symbols-outlined">
-							check_circle
-						</span>
-					</div>
-					<div className="flex-1">
-						<div className="mb-xs flex items-start justify-between gap-md">
-							<h2 className="font-title-lg text-title-lg">
-								Poll published
-							</h2>
-							<button
-								aria-label="Close dialog"
-								className="rounded-full p-xs text-outline hover:bg-surface-container-high hover:text-primary"
-								onClick={onClose}
-								type="button">
-								<span className="material-symbols-outlined">
-									close
-								</span>
-							</button>
-						</div>
-						<p className="mb-lg font-body-md">
-							Your poll is live. Share this link with your
-							participants.
-						</p>
-						<div className="flex flex-col gap-md rounded-lg border border-outline-variant bg-surface-container-low p-md md:flex-row md:items-center md:justify-between">
-							<code className="break-all font-label-lg text-primary">
-								{pollLink}
-							</code>
-							<button
-								className="flex items-center justify-center gap-xs rounded-full bg-primary px-4 py-2 font-label-md text-on-primary-container transition-colors hover:bg-primary-container"
-								onClick={onCopyLink}
-								type="button">
-								<span className="material-symbols-outlined text-[18px]">
-									content_copy
-								</span>
-								{copyLabel}
-							</button>
-						</div>
-						<button
-							className="mt-lg rounded-full bg-surface-container-low px-6 py-3 font-label-lg font-bold text-primary transition-colors hover:bg-surface-container-high"
-							onClick={onDone}
-							type="button">
-							Go to My Polls
-						</button>
-					</div>
-				</div>
+		<Dialog
+			icon="check_circle"
+			isOpen
+			onClose={onClose}
+			title="Poll published"
+			tone="success"
+			description="Your poll is live. Share this link with your participants.">
+			<div className="flex flex-col gap-md rounded-lg border border-outline-variant bg-surface-container-low p-md md:flex-row md:items-center md:justify-between">
+				<code className="break-all font-label-lg text-primary">
+					{pollLink}
+				</code>
+				<button
+					className="flex items-center justify-center gap-xs rounded-full bg-primary px-4 py-2 font-label-md text-on-primary-container transition-colors hover:bg-primary-container"
+					onClick={onCopyLink}
+					type="button">
+					<span className="material-symbols-outlined text-[18px]">
+						content_copy
+					</span>
+					{copyLabel}
+				</button>
 			</div>
-		</div>
+			<button
+				className="mt-lg rounded-full bg-surface-container-low px-6 py-3 font-label-lg font-bold text-primary transition-colors hover:bg-surface-container-high"
+				onClick={onDone}
+				type="button">
+				Go to My Polls
+			</button>
+		</Dialog>
 	);
 }

@@ -11,8 +11,10 @@ const loginUser = async (req: Request, res: Response) => {
 	}
 
 	const { loginUrl, state } = authService.createLoginUrl(req);
+	const returnTo = authService.getReturnToFromRequest(req);
 
 	setCookie(res, req, authService.STATE_COOKIE_NAME, state, 10 * 60);
+	setCookie(res, req, authService.RETURN_TO_COOKIE_NAME, returnTo, 10 * 60);
 
 	return res.redirect(loginUrl.toString());
 };
@@ -23,8 +25,10 @@ const registerUser = async (req: Request, res: Response) => {
 	}
 
 	const { registerUrl, state } = authService.createRegisterUrl(req);
+	const returnTo = authService.getReturnToFromRequest(req);
 
 	setCookie(res, req, authService.STATE_COOKIE_NAME, state, 10 * 60);
+	setCookie(res, req, authService.RETURN_TO_COOKIE_NAME, returnTo, 10 * 60);
 
 	return res.redirect(registerUrl.toString());
 };
@@ -52,9 +56,12 @@ const handleCallback = async (req: Request, res: Response) => {
 			tokenResponse.access_token,
 			tokenResponse.expires_in
 		);
-		clearCookie(res, req, authService.STATE_COOKIE_NAME);
+		const returnTo = authService.getReturnToToken(req);
 
-		return res.redirect(`${env.clientUrl}`);
+		clearCookie(res, req, authService.STATE_COOKIE_NAME);
+		clearCookie(res, req, authService.RETURN_TO_COOKIE_NAME);
+
+		return res.redirect(authService.getClientRedirectUrl(returnTo));
 	} catch {
 		return internal("Unable to complete login.");
 	}
@@ -80,6 +87,7 @@ const logoutUser = async (req: Request, res: Response) => {
 	await authService.revokeToken(req);
 	clearCookie(res, req, authService.AUTH_COOKIE_NAME);
 	clearCookie(res, req, authService.STATE_COOKIE_NAME);
+	clearCookie(res, req, authService.RETURN_TO_COOKIE_NAME);
 	return ok(res, "Logged out successfully");
 };
 

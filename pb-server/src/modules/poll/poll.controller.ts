@@ -26,6 +26,16 @@ function getQuestionId(req: Request) {
 	return questionId;
 }
 
+function getPublicSlug(req: Request) {
+	const { slug } = req.params;
+
+	if (!slug || Array.isArray(slug)) {
+		throw badRequest("Poll slug is required.");
+	}
+
+	return slug;
+}
+
 const createPolls = async (req: Request, res: Response) => {
 	if (!req.user?.id) {
 		throw unauthorized("Authentication required.");
@@ -57,6 +67,12 @@ const getPollById = async (req: Request, res: Response) => {
 	const poll = await pollService.getPollById(getPollId(req), req.user.id);
 
 	return ok(res, "Poll fetched successfully", poll);
+};
+
+const getPublicPollBySlug = async (req: Request, res: Response) => {
+	const poll = await pollService.getPublicPollBySlug(getPublicSlug(req));
+
+	return ok(res, "Public poll fetched successfully", poll);
 };
 
 const updatePoll = async (req: Request, res: Response) => {
@@ -149,6 +165,7 @@ export {
 	deletePoll,
 	getAllPolls,
 	getPollById,
+	getPublicPollBySlug,
 	publishPoll,
 	updateQuestion,
 	updatePoll,

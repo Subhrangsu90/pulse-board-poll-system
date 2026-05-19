@@ -14,13 +14,23 @@ const authRoutes = {
 	currentUser: "/auth/current-user",
 } as const;
 
+function getCurrentReturnTo() {
+	return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+}
+
+function withReturnTo(url: string, returnTo = getCurrentReturnTo()) {
+	const loginUrl = new URL(url, window.location.origin);
+	loginUrl.searchParams.set("returnTo", returnTo);
+	return loginUrl.toString();
+}
+
 export const authService = {
 	login() {
-		window.location.href = authRoutes.login;
+		window.location.href = withReturnTo(authRoutes.login);
 	},
 
 	register() {
-		window.location.href = authRoutes.register;
+		window.location.href = withReturnTo(authRoutes.register);
 	},
 
 	async logout() {
@@ -35,6 +45,14 @@ export const authService = {
 
 	async getCurrentUser() {
 		return await apiGet<CurrentUser>(authRoutes.currentUser);
+	},
+
+	async getOptionalCurrentUser() {
+		try {
+			return await apiGet<CurrentUser>(authRoutes.currentUser);
+		} catch {
+			return null;
+		}
 	},
 };
 

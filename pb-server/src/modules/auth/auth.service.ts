@@ -9,6 +9,40 @@ import { users } from "./model/user.model";
 import type { CurrentUser, NewUser, OidcUserInfo, User } from "./model/user.types";
 export const STATE_COOKIE_NAME = "pb_auth_state";
 export const AUTH_COOKIE_NAME = "pb_auth_token";
+export const RETURN_TO_COOKIE_NAME = "pb_auth_return_to";
+const DEFAULT_RETURN_TO = "/dashboard";
+
+const getReturnToFromRequest = (req: Request) => {
+	const { returnTo } = req.query;
+
+	if (typeof returnTo !== "string") {
+		return DEFAULT_RETURN_TO;
+	}
+
+	return sanitizeReturnTo(returnTo);
+};
+
+const sanitizeReturnTo = (returnTo: string) => {
+	if (!returnTo.startsWith("/") || returnTo.startsWith("//")) {
+		return DEFAULT_RETURN_TO;
+	}
+
+	if (/[\u0000-\u001f\u007f]/.test(returnTo)) {
+		return DEFAULT_RETURN_TO;
+	}
+
+	return returnTo;
+};
+
+const getReturnToToken = (req: Request) => {
+	const cookies = parseCookies(req);
+	return sanitizeReturnTo(cookies[RETURN_TO_COOKIE_NAME] ?? DEFAULT_RETURN_TO);
+};
+
+const getClientRedirectUrl = (returnTo: string) => {
+	const clientUrl = new URL(env.clientUrl);
+	return new URL(sanitizeReturnTo(returnTo), clientUrl.origin).toString();
+};
 
 const createLoginUrl = (req: Request) => {
 	const state = crypto.randomBytes(24).toString("base64url");
@@ -188,6 +222,9 @@ export {
 	createLoginUrl,
 	createRegisterUrl,
 	getStateToken,
+	getReturnToFromRequest,
+	getReturnToToken,
+	getClientRedirectUrl,
 	exchangeCodeForToken,
 	persistUserFromToken,
 	revokeToken,

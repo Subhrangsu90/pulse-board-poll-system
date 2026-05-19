@@ -8,6 +8,7 @@ import Drafts from "./pages/drafts";
 import Landing from "./pages/landing";
 import MyPolls from "./pages/myPolls";
 import Profile from "./pages/profile";
+import PublicPoll from "./pages/publicPoll";
 import Results from "./pages/results";
 import Settings from "./pages/settings";
 
@@ -71,6 +72,12 @@ const landingRoute = createRoute({
 	component: Landing,
 });
 
+const publicPollRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/public/poll/$slug",
+	component: PublicPoll,
+});
+
 const routeTree = rootRoute.addChildren([
 	workspaceRoute.addChildren([
 		dashboardRoute,
@@ -83,6 +90,7 @@ const routeTree = rootRoute.addChildren([
 		profileRoute,
 	]),
 	landingRoute,
+	publicPollRoute,
 ]);
 
 export const router = createRouter({
