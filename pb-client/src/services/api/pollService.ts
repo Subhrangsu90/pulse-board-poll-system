@@ -84,11 +84,36 @@ type AddQuestionPayload = {
 	}>;
 };
 
+type SubmitPollResponsePayload = {
+	answers: Array<{
+		questionId: string;
+		optionIds: string[];
+	}>;
+};
+
+type SubmittedPollResponse = {
+	id: string;
+	pollId: string;
+	userId: string | null;
+	anonymousUserIdentifier: string | null;
+	isAnonymous: boolean;
+	submittedAt: string | null;
+	ipAddress: string | null;
+	answers: Array<{
+		id: string;
+		responseId: string;
+		questionId: string;
+		optionId: string;
+		createdAt: string | null;
+	}>;
+};
+
 const pollsRoutes = {
 	getPolls: "/poll/polls",
 	createPoll: "/poll/polls",
 	poll: (pollId: string) => `/poll/polls/${pollId}`,
 	publicPoll: (slug: string) => `/poll/public/poll/${slug}`,
+	publicPollResponses: (slug: string) => `/poll/public/poll/${slug}/responses`,
 	addQuestion: (pollId: string) => `/poll/polls/${pollId}/questions`,
 	question: (questionId: string) => `/poll/questions/${questionId}`,
 	publishPoll: (pollId: string) => `/poll/polls/${pollId}/publish`,
@@ -106,6 +131,10 @@ const pollService = {
 
 	async getPublicPollBySlug(slug: string) {
 		return await apiGet<PublicPoll>(pollsRoutes.publicPoll(slug));
+	},
+
+	async submitPublicPollResponse(slug: string, payload: SubmitPollResponsePayload) {
+		return await apiPost<SubmittedPollResponse>(pollsRoutes.publicPollResponses(slug), payload);
 	},
 
 	async createPoll(payload: CreatePollPayload) {
@@ -149,5 +178,7 @@ export type {
 	PollDetail,
 	PollQuestion,
 	PublicPoll,
+	SubmittedPollResponse,
+	SubmitPollResponsePayload,
 	UpdatePollPayload,
 };

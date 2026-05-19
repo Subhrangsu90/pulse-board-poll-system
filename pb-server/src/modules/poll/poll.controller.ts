@@ -1,9 +1,13 @@
+import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
 import { badRequest, unauthorized } from "../../common/utils/api.error";
 import { created, ok } from "../../common/utils/api.response";
+import { parseCookies, setCookie } from "../../common/utils/auth.utils";
 import { parseSchema } from "../../common/utils/validation";
+import { fetchCurrentUser } from "../auth/auth.service";
 import { createPollBodySchema, updatePollBodySchema } from "./dto/polls.dto";
 import { questionSchema } from "./dto/questions.dto";
+import { submitPollResponseBodySchema } from "./dto/responses.dto";
 import * as pollService from "./poll.service";
 
 function getPollId(req: Request) {
@@ -34,6 +38,20 @@ function getPublicSlug(req: Request) {
 	}
 
 	return slug;
+}
+
+function getAnonymousResponseCookieName(publicSlug: string) {
+	return `pb_poll_${publicSlug.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80)}`;
+}
+
+function getRequestIp(req: Request) {
+	const forwardedFor = req.get("x-forwarded-for");
+
+	if (forwardedFor) {
+		return forwardedFor.split(",")[0]?.trim() ?? null;
+	}
+
+	return req.ip ?? null;
 }
 
 const createPolls = async (req: Request, res: Response) => {
@@ -73,6 +91,28 @@ const getPublicPollBySlug = async (req: Request, res: Response) => {
 	const poll = await pollService.getPublicPollBySlug(getPublicSlug(req));
 
 	return ok(res, "Public poll fetched successfully", poll);
+};
+
+const submitPublicPollResponse = async (req: Request, res: Response) => {
+	const publicSlug = getPublicSlug(req);
+	const cookieName = getAnonymousResponseCookieName(publicSlug);
+	const cookies = parseCookies(req);
+	const anonymousIdentifier = cookies[cookieName] ?? randomUUID();
+	const user = await fetchCurrentUser(req).catch(() => null);
+
+	const response = await pollService.submitPublicPollResponse({
+		publicSlug,
+		userId: user?.id ?? null,
+		anonymousIdentifier,
+		ipAddress: getRequestIp(req),
+		...parseSchema(submitPollResponseBodySchema, req.body),
+	});
+
+	if (response.isAnonymous) {
+		setCookie(res, req, cookieName, anonymousIdentifier, 60 * 60 * 24 * 365);
+	}
+
+	return created(res, "Response submitted successfully", response);
 };
 
 const updatePoll = async (req: Request, res: Response) => {
@@ -167,6 +207,7 @@ export {
 	getPollById,
 	getPublicPollBySlug,
 	publishPoll,
+	submitPublicPollResponse,
 	updateQuestion,
 	updatePoll,
 };

@@ -7,6 +7,7 @@ import * as controller from "./poll.controller";
 export const pollRouter: Router = express.Router();
 
 pollRouter.get("/public/poll/:slug", asyncHandler(controller.getPublicPollBySlug));
+pollRouter.post("/public/poll/:slug/responses", asyncHandler(controller.submitPublicPollResponse));
 pollRouter.post("/polls", requireAuth, asyncHandler(controller.createPolls));
 pollRouter.post("/polls/:pollId/questions", requireAuth, asyncHandler(controller.addQuestionToPoll));
 pollRouter.post("/polls/:pollId/publish", requireAuth, asyncHandler(controller.publishPoll));

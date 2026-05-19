@@ -27,6 +27,7 @@ export default function PublicPoll() {
 	const [answers, setAnswers] = useState<Answers>({});
 	const [isLoading, setIsLoading] = useState(true);
 	const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -36,6 +37,7 @@ export default function PublicPoll() {
 			setError(null);
 			setAnswers({});
 			setIsSubmitted(false);
+			setIsSubmitting(false);
 
 			try {
 				setPoll(await pollService.getPublicPollBySlug(slug));
@@ -121,7 +123,7 @@ export default function PublicPoll() {
 	};
 
 	const submitPoll = async () => {
-		if (!poll || isCheckingAuth) return;
+		if (!poll || isCheckingAuth || isSubmitting) return;
 
 		if (poll.responseMode === "authenticated") {
 			const verifiedUser = await checkCurrentUser();
@@ -136,7 +138,26 @@ export default function PublicPoll() {
 
 		if (!validateAnswers()) return;
 
-		setIsSubmitted(true);
+		setIsSubmitting(true);
+
+		try {
+			await pollService.submitPublicPollResponse(slug, {
+				answers: Object.entries(answers)
+					.map(([questionId, answer]) => ({
+						questionId,
+						optionIds: Array.isArray(answer) ? answer : [answer],
+					}))
+					.filter((answer) => answer.optionIds.length > 0),
+			});
+			setError(null);
+			setIsSubmitted(true);
+		} catch (submitError) {
+			console.error("Unable to submit public poll response:", submitError);
+			setIsSubmitted(false);
+			setError("Unable to submit response. Please try again.");
+		} finally {
+			setIsSubmitting(false);
+		}
 	};
 
 	if (isLoading) {
@@ -165,6 +186,7 @@ export default function PublicPoll() {
 	const authBlocked =
 		requiresAuthentication && (isCheckingAuth || !currentUser);
 	const canRespond = !authBlocked;
+	const isResponseLocked = authBlocked || isSubmitted || isSubmitting;
 	const answeredCount = poll.questions.filter((question) => {
 		const answer = answers[question.id];
 		return Array.isArray(answer) ? answer.length > 0 : Boolean(answer);
@@ -293,7 +315,7 @@ export default function PublicPoll() {
 														: "border-outline-variant bg-surface-container-lowest hover:border-primary"
 												}`}
 												key={option.id}
-												disabled={authBlocked || isSubmitted}
+												disabled={isResponseLocked}
 												onClick={() =>
 													question.questionType ===
 													"multiple_choice"
@@ -335,10 +357,10 @@ export default function PublicPoll() {
 
 						<button
 							className="w-full rounded-full bg-primary-container px-xl py-4 font-label-lg font-bold text-on-primary-container transition-all hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
-							disabled={authBlocked || isSubmitted}
+							disabled={isResponseLocked}
 							onClick={() => void submitPoll()}
 							type="button">
-							Submit Response
+							{isSubmitting ? "Submitting..." : "Submit Response"}
 						</button>
 					</section>
 				)}

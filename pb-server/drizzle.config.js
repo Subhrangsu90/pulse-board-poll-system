@@ -9,6 +9,9 @@ export default defineConfig({
 		"./src/modules/poll/model/polls.model.ts",
 		"./src/modules/poll/model/questions.model.ts",
 		"./src/modules/poll/model/options.model.ts",
+		"./src/modules/poll/model/responses.model.ts",
+		"./src/modules/poll/model/responseSessions.model.ts",
+		"./src/modules/poll/model/answers.model.ts",
 	],
 	dialect: "postgresql",
 	dbCredentials: {
