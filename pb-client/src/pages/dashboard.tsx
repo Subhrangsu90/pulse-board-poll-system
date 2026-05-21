@@ -207,9 +207,9 @@ function MetricCard({ label, value, badge }: MetricCardProps) {
 
 function PollCard({ poll }: { poll: Poll }) {
 	return (
-		<Link
+		<a
 			className="block cursor-pointer rounded-xl border border-outline-variant bg-surface-container-lowest p-md transition-all hover:bg-surface-container-high"
-			to="/results">
+			href={`/results?pollId=${poll.id}`}>
 			<div className="flex flex-col justify-between gap-md md:flex-row md:items-center">
 				<div className="flex-1">
 					<div className="mb-xs flex items-center gap-2">
@@ -243,7 +243,7 @@ function PollCard({ poll }: { poll: Poll }) {
 					</span>
 				</div>
 			</div>
-		</Link>
+		</a>
 	);
 }
 

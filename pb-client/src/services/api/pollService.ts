@@ -51,6 +51,52 @@ type PollDetail = Poll & {
 	questions: PollQuestion[];
 };
 
+type PollResults = {
+	poll: Pick<
+		Poll,
+		| "id"
+		| "title"
+		| "description"
+		| "tags"
+		| "responseMode"
+		| "expiresAt"
+		| "status"
+		| "publicSlug"
+		| "createdAt"
+		| "updatedAt"
+	>;
+	summary: {
+		totalResponses: number;
+		totalAnswerSelections: number;
+		anonymousResponses: number;
+		authenticatedResponses: number;
+		lastSubmittedAt: string | null;
+	};
+	questions: Array<{
+		id: string;
+		questionText: string;
+		questionType: "single_choice" | "multiple_choice" | null;
+		isRequired: boolean | null;
+		orderIndex: number;
+		responseCount: number;
+		totalSelections: number;
+		options: Array<{
+			id: string;
+			optionText: string;
+			orderIndex: number;
+			selectionCount: number;
+			percentage: number;
+		}>;
+	}>;
+	recentResponses: Array<{
+		id: string;
+		submittedAt: string | null;
+		isAnonymous: boolean;
+		answerCount: number;
+		status: "recorded";
+	}>;
+};
+
 type PublicPoll = {
 	id: string;
 	title: string;
@@ -114,6 +160,7 @@ const pollsRoutes = {
 	poll: (pollId: string) => `/poll/polls/${pollId}`,
 	publicPoll: (slug: string) => `/poll/public/poll/${slug}`,
 	publicPollResponses: (slug: string) => `/poll/public/poll/${slug}/responses`,
+	pollResults: (pollId: string) => `/poll/polls/${pollId}/results`,
 	addQuestion: (pollId: string) => `/poll/polls/${pollId}/questions`,
 	question: (questionId: string) => `/poll/questions/${questionId}`,
 	publishPoll: (pollId: string) => `/poll/polls/${pollId}/publish`,
@@ -127,6 +174,10 @@ const pollService = {
 
 	async getPollById(pollId: string) {
 		return await apiGet<PollDetail>(pollsRoutes.poll(pollId));
+	},
+
+	async getPollResults(pollId: string) {
+		return await apiGet<PollResults>(pollsRoutes.pollResults(pollId));
 	},
 
 	async getPublicPollBySlug(slug: string) {
@@ -176,6 +227,7 @@ export type {
 	CreatePollPayload,
 	Poll,
 	PollDetail,
+	PollResults,
 	PollQuestion,
 	PublicPoll,
 	SubmittedPollResponse,

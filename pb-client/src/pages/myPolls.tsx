@@ -146,6 +146,10 @@ export default function MyPolls() {
 		void navigate({ to: `/polls/${poll.id}/edit` });
 	};
 
+	const openResults = (poll: Poll) => {
+		window.location.href = `/results?pollId=${poll.id}`;
+	};
+
 	const closeEditDialog = () => {
 		setEditingPoll(null);
 		setEditForm(null);
@@ -356,7 +360,7 @@ export default function MyPolls() {
 										</button>
 										<button
 											className="flex items-center gap-xs rounded-full bg-surface-container-lowest px-4 py-2 font-label-lg text-primary"
-											onClick={() => void navigate({ to: "/results" })}
+											onClick={() => openResults(poll)}
 											type="button">
 											<span className="material-symbols-outlined text-[18px]">analytics</span>
 											Results
@@ -375,7 +379,7 @@ export default function MyPolls() {
 									<>
 										<button
 											className="flex items-center gap-xs rounded-full bg-primary-container px-4 py-2 font-label-lg text-on-primary-container"
-											onClick={() => void navigate({ to: "/results" })}
+											onClick={() => openResults(poll)}
 											type="button">
 											<span className="material-symbols-outlined text-[18px]">visibility</span>
 											Results
