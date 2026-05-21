@@ -3,7 +3,7 @@ import { createRoute, createRouter } from "@tanstack/react-router";
 import { rootRoute } from "./routes/__root";
 import { AppLayout } from "./components/layout/AppLayout";
 import CreatePoll from "./pages/createPoll";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/dashboard";
 import Drafts from "./pages/drafts";
 import Landing from "./pages/landing";
 import MyPolls from "./pages/myPolls";
