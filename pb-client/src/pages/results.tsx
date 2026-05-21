@@ -32,6 +32,8 @@ import {
 	type PollVoteEvent,
 } from "../services/realtime/pollSocket";
 import { aggregateAudienceRegions } from "../utils/audienceRegion";
+import { subscribeToSystemTheme } from "../utils/theme";
+import { useWorkspacePreferences } from "../components/workspacePreferencesContext";
 
 echarts.use([
 	BarChart,
@@ -247,6 +249,41 @@ function useEChart(option: EChartsOption) {
 	}, [option]);
 
 	return chartRef;
+}
+
+function useThemeColors() {
+	const { appearance } = useWorkspacePreferences();
+	const [colors, setColors] = useState({
+		primary: "#316342",
+		secondary: "#4c644e",
+		error: "#ba1a1a",
+	});
+
+	useEffect(() => {
+		const updateColors = () => {
+			const computed = getComputedStyle(document.documentElement);
+			setColors({
+				primary: computed.getPropertyValue("--color-primary").trim() || "#316342",
+				secondary: computed.getPropertyValue("--color-secondary").trim() || "#4c644e",
+				error: computed.getPropertyValue("--color-error").trim() || "#ba1a1a",
+			});
+		};
+
+		updateColors();
+		const timer = window.setTimeout(updateColors, 50);
+
+		let unsubscribe: (() => void) | undefined;
+		if (appearance.themeMode === "system") {
+			unsubscribe = subscribeToSystemTheme(updateColors);
+		}
+
+		return () => {
+			window.clearTimeout(timer);
+			if (unsubscribe) unsubscribe();
+		};
+	}, [appearance.themeMode]);
+
+	return colors;
 }
 
 export default function Results() {
@@ -732,9 +769,10 @@ export default function Results() {
 }
 
 function ActivityInsights({ results }: { results: PollResults }) {
+	const colors = useThemeColors();
 	const chartOption = useMemo<EChartsOption>(
 		() => ({
-			color: ["#6750a4", "#b3261e"],
+			color: [colors.primary, colors.error],
 			grid: { bottom: 24, left: 32, right: 12, top: 20 },
 			tooltip: { trigger: "axis" },
 			xAxis: {
@@ -894,9 +932,10 @@ function AudienceOriginPanel({ results }: { results: PollResults }) {
 		(total, region) => total + region.count,
 		0,
 	);
+	const colors = useThemeColors();
 	const chartOption = useMemo<EChartsOption>(
 		() => ({
-			color: ["#6750a4"],
+			color: [colors.primary],
 			grid: { bottom: 24, left: 28, right: 8, top: 12 },
 			tooltip: { trigger: "axis" },
 			xAxis: {
@@ -956,9 +995,10 @@ function AudienceOriginPanel({ results }: { results: PollResults }) {
 }
 
 function AudienceSegmentsPanel({ results }: { results: PollResults }) {
+	const colors = useThemeColors();
 	const chartOption = useMemo<EChartsOption>(
 		() => ({
-			color: ["#6750a4", "#625b71", "#b3261e"],
+			color: [colors.primary, colors.secondary, colors.error],
 			legend: { bottom: 0 },
 			tooltip: { trigger: "item" },
 			series: [
@@ -1049,9 +1089,10 @@ function QuestionResultCard({
 	question: PollResults["questions"][number];
 	questionIndex: number;
 }) {
+	const colors = useThemeColors();
 	const chartOption = useMemo<EChartsOption>(
 		() => ({
-			color: ["#6750a4"],
+			color: [colors.primary],
 			grid: { bottom: 24, left: 32, right: 12, top: 8 },
 			tooltip: { trigger: "axis" },
 			xAxis: {
