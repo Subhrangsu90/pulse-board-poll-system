@@ -1,11 +1,13 @@
-import { PagePlaceholder } from "../components/PagePlaceholder";
+import { PollListView } from "../components/polls/PollListView";
 
 export default function Drafts() {
 	return (
-		<PagePlaceholder
-			description="Pick up unfinished questions, refine answer choices, and publish when the timing is right."
-			icon="edit_note"
-			label="Drafts"
+		<PollListView
+			description="Pick up unfinished polls, refine questions, and publish when ready."
+			emptyDescription="Start a new poll and save it as a draft to see it here."
+			emptyTitle="No drafts yet"
+			showStatusSort={false}
+			statusFilter="draft"
 			title="Draft polls"
 		/>
 	);

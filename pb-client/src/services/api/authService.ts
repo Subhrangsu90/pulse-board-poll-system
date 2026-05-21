@@ -1,4 +1,4 @@
-import { API_BASE_URL, apiGet } from "./apiService";
+import { API_BASE_URL, apiGet, apiPatch } from "./apiService";
 
 type CurrentUser = {
 	id: string;
@@ -7,12 +7,19 @@ type CurrentUser = {
 	picture?: string | null;
 };
 
+type UserPreferences = {
+	defaultResponseMode: "anonymous" | "authenticated";
+	themeMode: "light" | "dark" | "system";
+	textScale: "compact" | "comfortable" | "large";
+};
+
 const authRoutes = {
 	login: `${API_BASE_URL}/auth/login`,
 	register: `${API_BASE_URL}/auth/register`,
 	logout: "/auth/logout",
 	currentUser: "/auth/current-user",
 	optionalCurrentUser: "/auth/optional-current-user",
+	preferences: "/auth/preferences",
 } as const;
 
 function getCurrentReturnTo() {
@@ -51,6 +58,14 @@ export const authService = {
 	async getOptionalCurrentUser() {
 		return await apiGet<CurrentUser | null>(authRoutes.optionalCurrentUser);
 	},
+
+	async getPreferences() {
+		return await apiGet<UserPreferences>(authRoutes.preferences);
+	},
+
+	async updatePreferences(preferences: UserPreferences) {
+		return await apiPatch<UserPreferences>(authRoutes.preferences, preferences);
+	},
 };
 
-export type { CurrentUser };
+export type { CurrentUser, UserPreferences };

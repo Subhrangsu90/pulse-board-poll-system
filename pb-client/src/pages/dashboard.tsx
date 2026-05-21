@@ -2,30 +2,36 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useToast } from "../components/toastContext";
 import { getApiErrorMessage } from "../services/api/apiService";
-import { pollService, type Poll } from "../services/api/pollService";
+import { pollService, type Poll, type PollsSummary } from "../services/api/pollService";
 
 export default function Dashboard() {
 	const toast = useToast();
 	const [polls, setPolls] = useState<Poll[]>([]);
+	const [summary, setSummary] = useState<PollsSummary | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
-		pollService
-			.getAllPolls()
-			.then(setPolls)
-			.catch((error) => {
-				console.error("Unable to fetch polls:", error);
-				toast.error(getApiErrorMessage(error, "Unable to fetch polls."));
-			})
-			.finally(() => {
+		void (async () => {
+			try {
+				const [loadedPolls, loadedSummary] = await Promise.all([
+					pollService.getAllPolls(),
+					pollService.getPollsSummary(),
+				]);
+				setPolls(loadedPolls);
+				setSummary(loadedSummary);
+			} catch (error) {
+				console.error("Unable to fetch dashboard data:", error);
+				toast.error(getApiErrorMessage(error, "Unable to fetch dashboard data."));
+			} finally {
 				setIsLoading(false);
-			});
+			}
+		})();
 	}, [toast]);
 
 	const activePolls = polls.filter((poll) => poll.status === "active");
 	const draftPolls = polls.filter((poll) => poll.status === "draft");
 	const completedPolls = polls.filter((poll) => poll.status === "completed");
-	const totalResponse = 0;
+	const totalResponses = summary?.totalResponses ?? 0;
 
 	return (
 		<section className="space-y-xl">
@@ -69,7 +75,7 @@ export default function Dashboard() {
 
 				<MetricCard
 					label="Total Responses"
-					value={isLoading ? "..." : totalResponse}
+					value={isLoading ? "..." : totalResponses}
 				/>
 			</section>
 

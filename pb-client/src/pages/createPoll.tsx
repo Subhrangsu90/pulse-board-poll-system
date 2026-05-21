@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useToast } from "../components/toastContext";
+import { getWorkspacePreferences } from "../utils/workspacePreferences";
 import { getApiErrorMessage } from "../services/api/apiService";
 import {
 	pollService,
@@ -55,7 +56,7 @@ export default function CreatePoll() {
 		description: "",
 		tags: "",
 		publicSlug: "",
-		responseMode: "anonymous",
+		responseMode: getWorkspacePreferences().defaultResponseMode,
 		expiresDate: defaultDateTime.date,
 		expiresTime: defaultDateTime.time,
 	});

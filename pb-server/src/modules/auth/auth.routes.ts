@@ -15,3 +15,5 @@ authRouter.get("/optional-current-user", asyncHandler(controller.getOptionalCurr
 // Protected Route
 authRouter.get("/logout", requireAuth, asyncHandler(controller.logoutUser));
 authRouter.get("/current-user", requireAuth, asyncHandler(controller.getCurrentUser));
+authRouter.get("/preferences", requireAuth, asyncHandler(controller.getUserPreferences));
+authRouter.patch("/preferences", requireAuth, asyncHandler(controller.updateUserPreferences));

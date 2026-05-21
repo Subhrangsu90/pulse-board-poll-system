@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Dialog } from "../components/Dialog";
+import { formatAudienceRegion } from "../utils/audienceRegion";
 import { useToast } from "../components/toastContext";
 import { authService, type CurrentUser } from "../services/api/authService";
 import { getApiErrorMessage } from "../services/api/apiService";
@@ -658,7 +659,7 @@ function LivePollCard({
 		}))
 		.sort((left, right) => right.count - left.count)[0];
 	const topRegion = Object.entries(metrics?.regions ?? {})
-		.map(([region, count]) => ({ region, count }))
+		.map(([region, count]) => ({ region: formatAudienceRegion(region), count }))
 		.sort((left, right) => right.count - left.count)[0];
 
 	return (

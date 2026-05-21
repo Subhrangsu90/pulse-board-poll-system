@@ -63,7 +63,12 @@ async function publishViewerCount(pollId: string) {
 }
 
 function normalizeRegion(region?: string) {
-	return (region || "Unknown").replace(/[^a-zA-Z0-9 _-]/g, "").slice(0, 64) || "Unknown";
+	const cleaned = (region || "Unknown").replace(/[^a-zA-Z0-9 _-]/g, "").slice(0, 64) || "Unknown";
+	if (cleaned.toUpperCase() === "IN") return "India";
+	if (/^Asia(Kolkata|Calcutta)$/i.test(cleaned)) return "India";
+	if (cleaned.toLowerCase() === "india") return "India";
+
+	return cleaned;
 }
 
 export async function setupSocketServer(server: HttpServer) {

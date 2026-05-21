@@ -235,6 +235,16 @@ const getAllPolls = async (req: Request, res: Response) => {
 	return ok(res, "Polls fetched successfully", polls);
 };
 
+const getPollsSummary = async (req: Request, res: Response) => {
+	if (!req.user?.id) {
+		throw unauthorized("Authentication required.");
+	}
+
+	const summary = await pollService.getPollsSummary(req.user.id);
+
+	return ok(res, "Poll summary fetched successfully", summary);
+};
+
 export {
 	addQuestionToPoll,
 	completePoll,
@@ -242,6 +252,7 @@ export {
 	deleteQuestion,
 	deletePoll,
 	getAllPolls,
+	getPollsSummary,
 	getPollById,
 	getPollResults,
 	getPublicPollLiveMetrics,

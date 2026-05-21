@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as echarts from "echarts/core";
-import { BarChart, LineChart, PieChart, type BarSeriesOption, type LineSeriesOption, type PieSeriesOption } from "echarts/charts";
+import {
+	BarChart,
+	LineChart,
+	PieChart,
+	type BarSeriesOption,
+	type LineSeriesOption,
+	type PieSeriesOption,
+} from "echarts/charts";
 import {
 	GridComponent,
 	LegendComponent,
@@ -12,7 +19,11 @@ import {
 import { CanvasRenderer } from "echarts/renderers";
 import { useToast } from "../components/toastContext";
 import { getApiErrorMessage } from "../services/api/apiService";
-import { pollService, type Poll, type PollResults } from "../services/api/pollService";
+import {
+	pollService,
+	type Poll,
+	type PollResults,
+} from "../services/api/pollService";
 import {
 	createPollSocket,
 	joinPollRoom,
@@ -20,6 +31,7 @@ import {
 	type PollAnalyticsEvent,
 	type PollVoteEvent,
 } from "../services/realtime/pollSocket";
+import { aggregateAudienceRegions } from "../utils/audienceRegion";
 
 echarts.use([
 	BarChart,
@@ -75,29 +87,43 @@ function getTimeRemaining(expiresAt: string) {
 }
 
 function getStatusClass(status: Poll["status"]) {
-	if (status === "active") return "bg-primary-container text-on-primary-container";
-	if (status === "completed") return "bg-secondary-container text-on-secondary-container";
-	if (status === "expired") return "bg-error-container text-on-error-container";
+	if (status === "active")
+		return "bg-primary-container text-on-primary-container";
+	if (status === "completed")
+		return "bg-secondary-container text-on-secondary-container";
+	if (status === "expired")
+		return "bg-error-container text-on-error-container";
 	return "bg-surface-container-high text-on-surface-variant";
 }
 
-function applyLiveVote(results: PollResults, event: PollVoteEvent): PollResults {
+function applyLiveVote(
+	results: PollResults,
+	event: PollVoteEvent,
+): PollResults {
 	if (results.poll.id !== event.pollId) return results;
 
 	const queuedResponseId = `queued-${event.submissionId ?? `${event.pollId}-${event.submittedAt ?? Date.now()}`}`;
 	const isNewSubmission = !results.recentResponses.some(
-		(response) => response.id === queuedResponseId
+		(response) => response.id === queuedResponseId,
 	);
 	const questions = results.questions.map((question) => {
-		const hasOption = question.options.some((option) => option.id === event.optionId);
+		const hasOption = question.options.some(
+			(option) => option.id === event.optionId,
+		);
 
 		if (!hasOption) return question;
 
 		const options = question.options.map((option) => ({
 			...option,
-			selectionCount: option.id === event.optionId ? event.count : option.selectionCount,
+			selectionCount:
+				option.id === event.optionId
+					? event.count
+					: option.selectionCount,
 		}));
-		const totalSelections = options.reduce((total, option) => total + option.selectionCount, 0);
+		const totalSelections = options.reduce(
+			(total, option) => total + option.selectionCount,
+			0,
+		);
 
 		return {
 			...question,
@@ -105,7 +131,12 @@ function applyLiveVote(results: PollResults, event: PollVoteEvent): PollResults 
 			totalSelections,
 			options: options.map((option) => ({
 				...option,
-				percentage: totalSelections === 0 ? 0 : Math.round((option.selectionCount / totalSelections) * 100),
+				percentage:
+					totalSelections === 0
+						? 0
+						: Math.round(
+								(option.selectionCount / totalSelections) * 100,
+							),
 			})),
 		};
 	});
@@ -114,10 +145,13 @@ function applyLiveVote(results: PollResults, event: PollVoteEvent): PollResults 
 		...results,
 		summary: {
 			...results.summary,
-			totalResponses: Math.max(results.summary.totalResponses, event.totalVotes),
+			totalResponses: Math.max(
+				results.summary.totalResponses,
+				event.totalVotes,
+			),
 			totalAnswerSelections: questions.reduce(
 				(total, question) => total + question.totalSelections,
-				0
+				0,
 			),
 			anonymousResponses:
 				isNewSubmission && (event.isAnonymous ?? true)
@@ -134,7 +168,8 @@ function applyLiveVote(results: PollResults, event: PollVoteEvent): PollResults 
 			? [
 					{
 						id: queuedResponseId,
-						submittedAt: event.submittedAt ?? new Date().toISOString(),
+						submittedAt:
+							event.submittedAt ?? new Date().toISOString(),
 						isAnonymous: event.isAnonymous ?? true,
 						answerCount: event.answerCount ?? 1,
 						status: "queued" as const,
@@ -145,12 +180,21 @@ function applyLiveVote(results: PollResults, event: PollVoteEvent): PollResults 
 	};
 }
 
-function preserveLiveResults(currentResults: PollResults | null, refreshedResults: PollResults) {
-	if (!currentResults || currentResults.poll.id !== refreshedResults.poll.id) {
+function preserveLiveResults(
+	currentResults: PollResults | null,
+	refreshedResults: PollResults,
+) {
+	if (
+		!currentResults ||
+		currentResults.poll.id !== refreshedResults.poll.id
+	) {
 		return refreshedResults;
 	}
 
-	if (refreshedResults.summary.totalResponses >= currentResults.summary.totalResponses) {
+	if (
+		refreshedResults.summary.totalResponses >=
+		currentResults.summary.totalResponses
+	) {
 		return refreshedResults;
 	}
 
@@ -161,20 +205,23 @@ function preserveLiveResults(currentResults: PollResults | null, refreshedResult
 			totalResponses: currentResults.summary.totalResponses,
 			totalAnswerSelections: Math.max(
 				refreshedResults.summary.totalAnswerSelections,
-				currentResults.summary.totalAnswerSelections
+				currentResults.summary.totalAnswerSelections,
 			),
 			anonymousResponses: Math.max(
 				refreshedResults.summary.anonymousResponses,
-				currentResults.summary.anonymousResponses
+				currentResults.summary.anonymousResponses,
 			),
 			authenticatedResponses: Math.max(
 				refreshedResults.summary.authenticatedResponses,
-				currentResults.summary.authenticatedResponses
+				currentResults.summary.authenticatedResponses,
 			),
 			lastSubmittedAt: currentResults.summary.lastSubmittedAt,
 			activeViewers:
-				refreshedResults.summary.activeViewers ?? currentResults.summary.activeViewers,
-			regions: refreshedResults.summary.regions ?? currentResults.summary.regions,
+				refreshedResults.summary.activeViewers ??
+				currentResults.summary.activeViewers,
+			regions:
+				refreshedResults.summary.regions ??
+				currentResults.summary.regions,
 		},
 		questions: currentResults.questions,
 		recentResponses: currentResults.recentResponses,
@@ -205,7 +252,9 @@ function useEChart(option: EChartsOption) {
 export default function Results() {
 	const toast = useToast();
 	const [polls, setPolls] = useState<Poll[]>([]);
-	const [selectedPollId, setSelectedPollId] = useState<string | null>(getInitialPollId);
+	const [selectedPollId, setSelectedPollId] = useState<string | null>(
+		getInitialPollId,
+	);
 	const [results, setResults] = useState<PollResults | null>(null);
 	const [isLoadingPolls, setIsLoadingPolls] = useState(true);
 	const [isLoadingResults, setIsLoadingResults] = useState(false);
@@ -214,7 +263,7 @@ export default function Results() {
 
 	const resultReadyPolls = useMemo(
 		() => polls.filter((poll) => poll.status !== "draft"),
-		[polls]
+		[polls],
 	);
 	const visiblePolls = resultReadyPolls.length > 0 ? resultReadyPolls : polls;
 
@@ -238,7 +287,10 @@ export default function Results() {
 				setSelectedPollId(fallbackPoll?.id ?? null);
 			} catch (loadError) {
 				console.error("Unable to load polls for results:", loadError);
-				const message = getApiErrorMessage(loadError, "Unable to load results.");
+				const message = getApiErrorMessage(
+					loadError,
+					"Unable to load results.",
+				);
 				setError(message);
 				toast.error(message);
 			} finally {
@@ -258,12 +310,20 @@ export default function Results() {
 			setError(null);
 
 			try {
-				const nextResults = await pollService.getPollResults(selectedPollId);
+				const nextResults =
+					await pollService.getPollResults(selectedPollId);
 				setResults(nextResults);
-				window.history.replaceState(null, "", `/results?pollId=${selectedPollId}`);
+				window.history.replaceState(
+					null,
+					"",
+					`/results?pollId=${selectedPollId}`,
+				);
 			} catch (loadError) {
 				console.error("Unable to load poll results:", loadError);
-				const message = getApiErrorMessage(loadError, "Unable to load poll results.");
+				const message = getApiErrorMessage(
+					loadError,
+					"Unable to load poll results.",
+				);
 				setError(message);
 				setResults(null);
 				toast.error(message);
@@ -289,19 +349,32 @@ export default function Results() {
 			setLivePulse(true);
 			window.setTimeout(() => setLivePulse(false), 1400);
 			setResults((currentResults) =>
-				currentResults ? applyLiveVote(currentResults, event) : currentResults
+				currentResults
+					? applyLiveVote(currentResults, event)
+					: currentResults,
 			);
 			window.setTimeout(() => {
 				void pollService
 					.getPollResults(selectedPollId)
 					.then((refreshedResults) => {
 						setResults((currentResults) =>
-							preserveLiveResults(currentResults, refreshedResults)
+							preserveLiveResults(
+								currentResults,
+								refreshedResults,
+							),
 						);
 					})
 					.catch((loadError) => {
-						console.error("Unable to refresh live results:", loadError);
-						toast.error(getApiErrorMessage(loadError, "Unable to refresh live results."));
+						console.error(
+							"Unable to refresh live results:",
+							loadError,
+						);
+						toast.error(
+							getApiErrorMessage(
+								loadError,
+								"Unable to refresh live results.",
+							),
+						);
 					});
 			}, 1800);
 		});
@@ -316,15 +389,23 @@ export default function Results() {
 							summary: {
 								...currentResults.summary,
 								activeViewers:
-									event.activeViewers ?? currentResults.summary.activeViewers ?? 0,
-								regions: event.regions ?? currentResults.summary.regions,
+									event.activeViewers ??
+									currentResults.summary.activeViewers ??
+									0,
+								regions:
+									event.regions ??
+									currentResults.summary.regions,
 								totalResponses:
 									event.totalVotes === undefined
 										? currentResults.summary.totalResponses
-										: Math.max(currentResults.summary.totalResponses, event.totalVotes),
+										: Math.max(
+												currentResults.summary
+													.totalResponses,
+												event.totalVotes,
+											),
 							},
 						}
-					: currentResults
+					: currentResults,
 			);
 		});
 
@@ -338,8 +419,10 @@ export default function Results() {
 	const responseRate =
 		results && results.questions.length > 0
 			? Math.round(
-					results.questions.reduce((total, question) => total + question.responseCount, 0) /
-						results.questions.length
+					results.questions.reduce(
+						(total, question) => total + question.responseCount,
+						0,
+					) / results.questions.length,
 				)
 			: 0;
 
@@ -361,7 +444,9 @@ export default function Results() {
 	if (isLoadingPolls) {
 		return (
 			<section className="rounded-xl border border-outline-variant bg-surface-container p-xl">
-				<p className="font-body-md text-on-surface-variant">Loading results...</p>
+				<p className="font-body-md text-on-surface-variant">
+					Loading results...
+				</p>
 			</section>
 		);
 	}
@@ -372,7 +457,9 @@ export default function Results() {
 				<span className="material-symbols-outlined mb-md text-[40px] text-primary">
 					analytics
 				</span>
-				<h2 className="mb-sm font-serif text-headline-md text-primary">No polls yet</h2>
+				<h2 className="mb-sm font-serif text-headline-md text-primary">
+					No polls yet
+				</h2>
 				<p className="font-body-md text-on-surface-variant">
 					Create and publish a poll before reviewing results.
 				</p>
@@ -383,9 +470,11 @@ export default function Results() {
 	const completionPercent =
 		results && results.questions.length > 0
 			? Math.round(
-					(results.questions.filter((question) => question.responseCount > 0).length /
+					(results.questions.filter(
+						(question) => question.responseCount > 0,
+					).length /
 						results.questions.length) *
-						100
+						100,
 				)
 			: 0;
 
@@ -409,8 +498,11 @@ export default function Results() {
 						</span>
 						{results ? (
 							<span className="flex items-center gap-xs rounded border border-outline-variant bg-surface-container-high px-2 py-0.5 font-label-md text-label-md text-on-surface-variant">
-								<span className="material-symbols-outlined text-[16px]">schedule</span>
-								Time Remaining: {getTimeRemaining(results.poll.expiresAt)}
+								<span className="material-symbols-outlined text-[16px]">
+									schedule
+								</span>
+								Time Remaining:{" "}
+								{getTimeRemaining(results.poll.expiresAt)}
 							</span>
 						) : null}
 						{livePulse ? (
@@ -460,26 +552,30 @@ export default function Results() {
 						</div>
 					) : null}
 					<div className="flex flex-col gap-sm md:flex-row md:items-center">
-					<select
-						className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-label-lg text-primary"
-						onChange={(event) => setSelectedPollId(event.target.value)}
-						value={selectedPollId ?? ""}>
-						{visiblePolls.map((poll) => (
-							<option
-								key={poll.id}
-								value={poll.id}>
-								{poll.title}
-							</option>
-						))}
-					</select>
-					<button
-						className="flex items-center justify-center gap-xs rounded-full bg-primary-container px-lg py-sm font-label-lg text-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
-						disabled={!results}
-						onClick={exportResults}
-						type="button">
-						<span className="material-symbols-outlined text-[18px]">download</span>
-						Export
-					</button>
+						<select
+							className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-label-lg text-primary"
+							onChange={(event) =>
+								setSelectedPollId(event.target.value)
+							}
+							value={selectedPollId ?? ""}>
+							{visiblePolls.map((poll) => (
+								<option
+									key={poll.id}
+									value={poll.id}>
+									{poll.title}
+								</option>
+							))}
+						</select>
+						<button
+							className="flex items-center justify-center gap-xs rounded-full bg-primary-container px-lg py-sm font-label-lg text-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
+							disabled={!results}
+							onClick={exportResults}
+							type="button">
+							<span className="material-symbols-outlined text-[18px]">
+								download
+							</span>
+							Export
+						</button>
 					</div>
 				</div>
 			</header>
@@ -492,7 +588,9 @@ export default function Results() {
 
 			{isLoadingResults || !results ? (
 				<section className="rounded-xl border border-outline-variant bg-surface-container p-xl">
-					<p className="font-body-md text-on-surface-variant">Loading selected poll...</p>
+					<p className="font-body-md text-on-surface-variant">
+						Loading selected poll...
+					</p>
 				</section>
 			) : (
 				<>
@@ -528,13 +626,15 @@ export default function Results() {
 								</p>
 							) : (
 								<div className="grid grid-cols-1 gap-gutter">
-									{results.questions.map((question, questionIndex) => (
-										<QuestionResultCard
-											key={question.id}
-											question={question}
-											questionIndex={questionIndex}
-										/>
-									))}
+									{results.questions.map(
+										(question, questionIndex) => (
+											<QuestionResultCard
+												key={question.id}
+												question={question}
+												questionIndex={questionIndex}
+											/>
+										),
+									)}
 								</div>
 							)}
 						</section>
@@ -548,12 +648,17 @@ export default function Results() {
 									<SplitBar
 										label="Anonymous"
 										total={results.summary.totalResponses}
-										value={results.summary.anonymousResponses}
+										value={
+											results.summary.anonymousResponses
+										}
 									/>
 									<SplitBar
 										label="Authenticated"
 										total={results.summary.totalResponses}
-										value={results.summary.authenticatedResponses}
+										value={
+											results.summary
+												.authenticatedResponses
+										}
 									/>
 								</div>
 								{publicLink ? (
@@ -562,7 +667,9 @@ export default function Results() {
 										href={publicLink}
 										rel="noreferrer"
 										target="_blank">
-										<span className="material-symbols-outlined text-[18px]">open_in_new</span>
+										<span className="material-symbols-outlined text-[18px]">
+											open_in_new
+										</span>
 										Open public poll
 									</a>
 								) : null}
@@ -578,26 +685,36 @@ export default function Results() {
 									</p>
 								) : (
 									<div className="space-y-sm">
-										{results.recentResponses.map((response) => (
-											<div
-												className="rounded-lg border border-outline-variant bg-surface-container-lowest p-md"
-												key={response.id}>
-												<div className="flex items-center justify-between gap-md">
-													<span className="font-label-lg text-on-surface">
-														{formatDateTime(response.submittedAt)}
-													</span>
-													<span className="rounded-full bg-secondary-container px-2 py-0.5 font-label-md text-label-md text-on-secondary-container">
-														{response.status}
-													</span>
+										{results.recentResponses.map(
+											(response) => (
+												<div
+													className="rounded-lg border border-outline-variant bg-surface-container-lowest p-md"
+													key={response.id}>
+													<div className="flex items-center justify-between gap-md">
+														<span className="font-label-lg text-on-surface">
+															{formatDateTime(
+																response.submittedAt,
+															)}
+														</span>
+														<span className="rounded-full bg-secondary-container px-2 py-0.5 font-label-md text-label-md text-on-secondary-container">
+															{response.status}
+														</span>
+													</div>
+													<p className="mt-xs font-label-md text-label-md text-on-surface-variant">
+														{response.isAnonymous
+															? "Anonymous"
+															: "Authenticated"}{" "}
+														response,{" "}
+														{response.answerCount}{" "}
+														answer
+														{response.answerCount ===
+														1
+															? ""
+															: "s"}
+													</p>
 												</div>
-												<p className="mt-xs font-label-md text-label-md text-on-surface-variant">
-													{response.isAnonymous ? "Anonymous" : "Authenticated"} response,
-													{" "}
-													{response.answerCount} answer
-													{response.answerCount === 1 ? "" : "s"}
-												</p>
-											</div>
-										))}
+											),
+										)}
 									</div>
 								)}
 							</section>
@@ -633,15 +750,24 @@ function ActivityInsights({ results }: { results: PollResults }) {
 					areaStyle: { opacity: 0.12 },
 					data: [
 						0,
-						Math.max(0, Math.round(results.summary.totalResponses * 0.2)),
-						Math.max(0, Math.round(results.summary.totalResponses * 0.45)),
-						Math.max(0, Math.round(results.summary.totalResponses * 0.7)),
+						Math.max(
+							0,
+							Math.round(results.summary.totalResponses * 0.2),
+						),
+						Math.max(
+							0,
+							Math.round(results.summary.totalResponses * 0.45),
+						),
+						Math.max(
+							0,
+							Math.round(results.summary.totalResponses * 0.7),
+						),
 						results.summary.totalResponses,
 					],
 				},
 			],
 		}),
-		[results.summary.totalResponses]
+		[results.summary.totalResponses],
 	);
 	const chartRef = useEChart(chartOption);
 
@@ -649,7 +775,9 @@ function ActivityInsights({ results }: { results: PollResults }) {
 		<div className="space-y-md rounded-xl border border-outline-variant bg-surface-container p-md lg:col-span-7">
 			<div className="flex items-center justify-between border-b border-outline-variant pb-sm">
 				<div>
-					<h3 className="font-serif text-title-lg">Participation Insights</h3>
+					<h3 className="font-serif text-title-lg">
+						Participation Insights
+					</h3>
 					<p className="font-label-md text-on-surface-variant">
 						Active engagement trends
 					</p>
@@ -680,7 +808,15 @@ function VelocityPanel({
 	responseRate: number;
 	results: PollResults;
 }) {
-	const bars = [20, 35, 30, 55, 45, 80, results.summary.totalResponses > 0 ? 100 : 12];
+	const bars = [
+		20,
+		35,
+		30,
+		55,
+		45,
+		80,
+		results.summary.totalResponses > 0 ? 100 : 12,
+	];
 
 	return (
 		<div className="flex flex-col gap-gutter lg:col-span-5">
@@ -694,13 +830,17 @@ function VelocityPanel({
 							{results.summary.totalResponses}
 						</h4>
 					</div>
-					<span className="material-symbols-outlined text-primary">trending_up</span>
+					<span className="material-symbols-outlined text-primary">
+						trending_up
+					</span>
 				</div>
 				<div className="flex h-12 items-end gap-1">
 					{bars.map((height, index) => (
 						<div
 							className={`w-full rounded-t-sm ${
-								index === bars.length - 1 ? "animate-pulse bg-primary" : "bg-primary/40"
+								index === bars.length - 1
+									? "animate-pulse bg-primary"
+									: "bg-primary/40"
 							}`}
 							key={`${height}-${index}`}
 							style={{ height: `${height}%` }}
@@ -713,8 +853,12 @@ function VelocityPanel({
 			</div>
 			<div className="flex flex-1 gap-gutter">
 				<div className="flex flex-1 flex-col justify-center rounded-xl border border-outline-variant/20 bg-secondary-container p-4 text-on-secondary-container">
-					<p className="mb-1 font-label-md text-[10px] uppercase">Completion</p>
-					<h4 className="font-display-lg text-2xl font-bold">{completionPercent}%</h4>
+					<p className="mb-1 font-label-md text-[10px] uppercase">
+						Completion
+					</p>
+					<h4 className="font-display-lg text-2xl font-bold">
+						{completionPercent}%
+					</h4>
 					<div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-on-secondary-container/20">
 						<div
 							className="h-full bg-on-secondary-container"
@@ -730,7 +874,9 @@ function VelocityPanel({
 						{responseRate}
 					</h4>
 					<p className="mt-1 flex items-center gap-1 text-[9px] text-on-surface-variant">
-						<span className="material-symbols-outlined text-[10px]">timer</span>
+						<span className="material-symbols-outlined text-[10px]">
+							timer
+						</span>
 						per question
 					</p>
 				</div>
@@ -741,15 +887,13 @@ function VelocityPanel({
 
 function AudienceOriginPanel({ results }: { results: PollResults }) {
 	const regions = useMemo(
-		() =>
-			Object.entries(results.summary.regions ?? {})
-				.map(([region, count]) => ({ region, count }))
-				.filter((region) => region.count > 0)
-				.sort((left, right) => right.count - left.count)
-				.slice(0, 6),
-		[results.summary.regions]
+		() => aggregateAudienceRegions(results.summary.regions, 6),
+		[results.summary.regions],
 	);
-	const totalRegions = regions.reduce((total, region) => total + region.count, 0);
+	const totalRegions = regions.reduce(
+		(total, region) => total + region.count,
+		0,
+	);
 	const chartOption = useMemo<EChartsOption>(
 		() => ({
 			color: ["#6750a4"],
@@ -769,7 +913,7 @@ function AudienceOriginPanel({ results }: { results: PollResults }) {
 				},
 			],
 		}),
-		[regions]
+		[regions],
 	);
 	const chartRef = useEChart(chartOption);
 
@@ -783,8 +927,8 @@ function AudienceOriginPanel({ results }: { results: PollResults }) {
 					public
 				</span>
 			</div>
-			<div className="flex flex-col items-center gap-lg md:flex-row">
-				<div className="w-full space-y-4 md:w-1/2">
+			<div className="flex flex-col items-center gap-lg ">
+				<div className="w-full space-y-4">
 					{regions.length === 0 ? (
 						<p className="rounded-lg bg-surface-container p-md font-body-md text-on-surface-variant">
 							Waiting for live viewers to join this poll.
@@ -800,7 +944,7 @@ function AudienceOriginPanel({ results }: { results: PollResults }) {
 						))
 					)}
 				</div>
-				<div className="flex min-h-[120px] w-full items-center justify-center rounded-lg bg-surface-container p-2 md:w-1/2">
+				<div className="flex min-h-[120px] w-full items-center justify-center rounded-lg bg-surface-container p-2 ">
 					<div
 						className="h-40 w-full"
 						ref={chartRef}
@@ -823,14 +967,23 @@ function AudienceSegmentsPanel({ results }: { results: PollResults }) {
 					radius: ["48%", "72%"],
 					center: ["50%", "42%"],
 					data: [
-						{ name: "Anonymous", value: results.summary.anonymousResponses },
-						{ name: "Authenticated", value: results.summary.authenticatedResponses },
+						{
+							name: "Anonymous",
+							value: results.summary.anonymousResponses,
+						},
+						{
+							name: "Authenticated",
+							value: results.summary.authenticatedResponses,
+						},
 					],
 					label: { formatter: "{b}: {c}" },
 				},
 			],
 		}),
-		[results.summary.anonymousResponses, results.summary.authenticatedResponses]
+		[
+			results.summary.anonymousResponses,
+			results.summary.authenticatedResponses,
+		],
 	);
 	const chartRef = useEChart(chartOption);
 
@@ -866,15 +1019,21 @@ function AudienceSegmentsPanel({ results }: { results: PollResults }) {
 					<div className="flex gap-2">
 						<div className="flex-1 rounded border border-outline-variant/50 bg-surface-container-high p-2 text-center">
 							<p className="font-label-md font-bold text-primary">
-								{results.poll.responseMode === "authenticated" ? "Verified" : "Open"}
+								{results.poll.responseMode === "authenticated"
+									? "Verified"
+									: "Open"}
 							</p>
-							<p className="text-[9px] uppercase text-on-surface-variant">Mode</p>
+							<p className="text-[9px] uppercase text-on-surface-variant">
+								Mode
+							</p>
 						</div>
 						<div className="flex-1 rounded border border-outline-variant/50 bg-surface-container-high p-2 text-center">
 							<p className="font-label-md font-bold text-primary">
 								{results.questions.length}
 							</p>
-							<p className="text-[9px] uppercase text-on-surface-variant">Questions</p>
+							<p className="text-[9px] uppercase text-on-surface-variant">
+								Questions
+							</p>
 						</div>
 					</div>
 				</div>
@@ -905,11 +1064,13 @@ function QuestionResultCard({
 				{
 					type: "bar",
 					barMaxWidth: 42,
-					data: question.options.map((option) => option.selectionCount),
+					data: question.options.map(
+						(option) => option.selectionCount,
+					),
 				},
 			],
 		}),
-		[question.options]
+		[question.options],
 	);
 	const chartRef = useEChart(chartOption);
 
@@ -957,7 +1118,9 @@ function QuestionResultCard({
 						className="space-y-xs"
 						key={option.id}>
 						<div className="flex items-center justify-between gap-md font-label-lg text-label-lg">
-							<span className="min-w-0 break-words text-on-surface">{option.optionText}</span>
+							<span className="min-w-0 break-words text-on-surface">
+								{option.optionText}
+							</span>
 							<span className="shrink-0 text-primary">
 								{option.selectionCount} ({option.percentage}%)
 							</span>
@@ -986,7 +1149,9 @@ function SubmissionLog({
 		<section className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm">
 			<div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-md py-lg">
 				<div>
-					<h3 className="font-serif text-title-lg">Verified Submission Log</h3>
+					<h3 className="font-serif text-title-lg">
+						Verified Submission Log
+					</h3>
 					<p className="font-label-md text-label-md text-on-surface-variant">
 						Real-time curation feed
 					</p>
@@ -995,7 +1160,9 @@ function SubmissionLog({
 					className="flex items-center gap-2 rounded-full bg-primary px-lg py-sm font-label-lg text-xs text-on-primary transition-all hover:opacity-90"
 					onClick={onExport}
 					type="button">
-					<span className="material-symbols-outlined text-[18px]">download</span>
+					<span className="material-symbols-outlined text-[18px]">
+						download
+					</span>
 					Export
 				</button>
 			</div>
@@ -1036,12 +1203,17 @@ function SubmissionLog({
 									</td>
 									<td className="px-md py-md">
 										<span className="rounded-full bg-outline-variant/30 px-2 py-0.5 text-[10px] font-medium text-on-surface-variant">
-											{response.isAnonymous ? "Anonymous" : "Verified"}
+											{response.isAnonymous
+												? "Anonymous"
+												: "Verified"}
 										</span>
 									</td>
 									<td className="px-md py-md font-body-md text-xs italic text-on-surface">
 										{response.answerCount} answer
-										{response.answerCount === 1 ? "" : "s"} recorded
+										{response.answerCount === 1
+											? ""
+											: "s"}{" "}
+										recorded
 									</td>
 									<td className="px-md py-md">
 										<span className="rounded-full bg-secondary-container px-2 py-1 text-[9px] font-bold uppercase text-on-secondary-container">

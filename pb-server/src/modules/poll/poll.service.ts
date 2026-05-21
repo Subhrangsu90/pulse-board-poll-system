@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, desc, eq, inArray, lte } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, lte } from "drizzle-orm";
 import { db } from "../../common/config/db";
 import { badRequest, conflict, internal, notFound, unauthorized } from "../../common/utils/api.error";
 import type { CreatePollInput, UpdatePollInput } from "./dto/polls.dto";
@@ -769,6 +769,29 @@ const getAllPolls = async (creatorId: string) => {
 		.orderBy(desc(polls.createdAt));
 };
 
+const getPollsSummary = async (creatorId: string) => {
+	await expireDuePolls();
+
+	const [responseCount] = await db
+		.select({ totalResponses: count(responses.id) })
+		.from(responses)
+		.innerJoin(polls, eq(responses.pollId, polls.id))
+		.where(eq(polls.creatorId, creatorId));
+
+	const creatorPolls = await db
+		.select({ status: polls.status })
+		.from(polls)
+		.where(eq(polls.creatorId, creatorId));
+
+	return {
+		totalResponses: Number(responseCount?.totalResponses ?? 0),
+		totalPolls: creatorPolls.length,
+		activePolls: creatorPolls.filter((poll) => poll.status === "active").length,
+		draftPolls: creatorPolls.filter((poll) => poll.status === "draft").length,
+		completedPolls: creatorPolls.filter((poll) => poll.status === "completed").length,
+	};
+};
+
 export {
 	addQuestionToPoll,
 	completePoll,
@@ -777,6 +800,7 @@ export {
 	deletePoll,
 	expireDuePolls,
 	getAllPolls,
+	getPollsSummary,
 	getPollById,
 	getPollResults,
 	getPublicPollLiveMetrics,

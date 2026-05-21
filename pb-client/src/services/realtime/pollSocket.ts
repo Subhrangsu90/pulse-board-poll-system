@@ -1,4 +1,5 @@
 import { io, type Socket } from "socket.io-client";
+import { getViewerRegion } from "../../utils/audienceRegion";
 import { API_BASE_URL } from "../api/apiService";
 
 type PollVoteEvent = {
@@ -18,14 +19,6 @@ type PollAnalyticsEvent = {
 	totalVotes?: number;
 	regions?: Record<string, number>;
 };
-
-function getViewerRegion() {
-	const locale = navigator.language || Intl.DateTimeFormat().resolvedOptions().locale || "Unknown";
-	const region = locale.split("-")[1];
-	const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-	return region || timezone || "Unknown";
-}
 
 function getSocketUrl() {
 	if (import.meta.env.VITE_SOCKET_URL) {

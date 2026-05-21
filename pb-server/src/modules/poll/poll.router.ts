@@ -26,6 +26,7 @@ pollRouter.post(
 	asyncHandler(controller.submitPublicPollResponse)
 );
 pollRouter.get("/polls/realtime/queue-health", requireAuth, asyncHandler(controller.getVoteQueueHealth));
+pollRouter.get("/polls/summary", requireAuth, asyncHandler(controller.getPollsSummary));
 pollRouter.post("/polls", requireAuth, asyncHandler(controller.createPolls));
 pollRouter.post("/polls/:pollId/questions", requireAuth, asyncHandler(controller.addQuestionToPoll));
 pollRouter.post("/polls/:pollId/publish", requireAuth, asyncHandler(controller.publishPoll));

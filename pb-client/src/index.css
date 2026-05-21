@@ -48,40 +48,40 @@
     --font-serif: "Literata", Georgia, serif;
     --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
-    --text-display-lg: 57px;
-    --text-display-lg--line-height: 64px;
+    --text-display-lg: 3.5625rem;
+    --text-display-lg--line-height: 4rem;
     --text-display-lg--font-weight: 700;
     --text-display-lg--letter-spacing: 0;
 
-    --text-headline-lg: 32px;
-    --text-headline-lg--line-height: 40px;
+    --text-headline-lg: 2rem;
+    --text-headline-lg--line-height: 2.5rem;
     --text-headline-lg--font-weight: 600;
 
-    --text-headline-md: 28px;
-    --text-headline-md--line-height: 36px;
+    --text-headline-md: 1.75rem;
+    --text-headline-md--line-height: 2.25rem;
     --text-headline-md--font-weight: 600;
 
-    --text-title-lg: 22px;
-    --text-title-lg--line-height: 28px;
+    --text-title-lg: 1.375rem;
+    --text-title-lg--line-height: 1.75rem;
     --text-title-lg--font-weight: 500;
 
-    --text-body-lg: 16px;
-    --text-body-lg--line-height: 24px;
+    --text-body-lg: 1rem;
+    --text-body-lg--line-height: 1.5rem;
     --text-body-lg--font-weight: 400;
     --text-body-lg--letter-spacing: 0;
 
-    --text-body-md: 14px;
-    --text-body-md--line-height: 20px;
+    --text-body-md: 0.875rem;
+    --text-body-md--line-height: 1.25rem;
     --text-body-md--font-weight: 400;
     --text-body-md--letter-spacing: 0;
 
-    --text-label-lg: 14px;
-    --text-label-lg--line-height: 20px;
+    --text-label-lg: 0.875rem;
+    --text-label-lg--line-height: 1.25rem;
     --text-label-lg--font-weight: 500;
     --text-label-lg--letter-spacing: 0;
 
-    --text-label-md: 12px;
-    --text-label-md--line-height: 16px;
+    --text-label-md: 0.75rem;
+    --text-label-md--line-height: 1rem;
     --text-label-md--font-weight: 500;
     --text-label-md--letter-spacing: 0;
 
@@ -89,18 +89,18 @@
     --radius-md: 0.75rem;
     --radius-lg: 1rem;
     --radius-xl: 1.5rem;
-    --radius-full: 9999px;
+    --radius-full: 9999rem;
 
-    --spacing-base: 4px;
-    --spacing-xs: 4px;
-    --spacing-sm: 8px;
-    --spacing-md: 16px;
-    --spacing-lg: 24px;
-    --spacing-xl: 32px;
-    --spacing-gutter: 24px;
-    --spacing-margin: 24px;
+    --spacing-base: 0.25rem;
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-gutter: 1.5rem;
+    --spacing-margin: 1.5rem;
 
-    --shadow-popover: 0 12px 32px rgba(55, 104, 71, 0.15);
+    --shadow-popover: 0 0.75rem 2rem rgba(55, 104, 71, 0.15);
 
     --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
@@ -117,7 +117,6 @@
     }
 }
 
-/* Hides the icon for both date and time inputs */
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
     display: none;

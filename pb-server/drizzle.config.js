@@ -6,6 +6,7 @@ export default defineConfig({
 	schema: [
 		"./src/common/dto/base.dto.ts",
 		"./src/modules/auth/model/user.model.ts",
+		"./src/modules/auth/model/user-preferences.model.ts",
 		"./src/modules/poll/model/polls.model.ts",
 		"./src/modules/poll/model/questions.model.ts",
 		"./src/modules/poll/model/options.model.ts",

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { AudienceOriginCard } from "../components/AudienceOriginCard";
 import { getApiErrorMessage } from "../services/api/apiService";
 import { pollService, type PollResults } from "../services/api/pollService";
 import {
@@ -106,15 +107,6 @@ export default function PublicResults() {
 		};
 	}, [results?.poll.id]);
 
-	const topRegions = useMemo(
-		() =>
-			Object.entries(results?.summary.regions ?? {})
-				.filter(([, count]) => count > 0)
-				.sort((left, right) => right[1] - left[1])
-				.slice(0, 4),
-		[results?.summary.regions]
-	);
-
 	if (isLoading) {
 		return <main className="min-h-screen bg-surface p-xl text-on-surface">Loading results...</main>;
 	}
@@ -155,29 +147,10 @@ export default function PublicResults() {
 					<Metric label="Authenticated" value={results.summary.authenticatedResponses} />
 				</div>
 
-				<section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
-					<h2 className="mb-md font-serif text-title-lg text-primary">Live Audience Origin</h2>
-					{topRegions.length === 0 ? (
-						<p className="font-body-md text-on-surface-variant">No live viewers right now.</p>
-					) : (
-						<div className="space-y-sm">
-							{topRegions.map(([region, count]) => (
-								<div key={region}>
-									<div className="mb-xs flex justify-between font-label-lg text-label-lg">
-										<span>{region}</span>
-										<span className="text-primary">{count}</span>
-									</div>
-									<div className="h-2 overflow-hidden rounded-full bg-surface-container-high">
-										<div
-											className="h-full rounded-full bg-primary-container"
-											style={{ width: `${Math.max(8, (count / Math.max(results.summary.activeViewers ?? 1, 1)) * 100)}%` }}
-										/>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
-				</section>
+				<AudienceOriginCard
+					activeViewers={results.summary.activeViewers}
+					regions={results.summary.regions}
+				/>
 
 				<section className="space-y-lg">
 					{results.questions.map((question, questionIndex) => (

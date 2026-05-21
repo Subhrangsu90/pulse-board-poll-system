@@ -155,8 +155,28 @@ type PublicPollLiveMetrics = {
 	regions?: Record<string, number>;
 };
 
+type VoteQueueHealth = {
+	queue: string;
+	waiting: number;
+	active: number;
+	delayed: number;
+	failed: number;
+	completed: number;
+	deadLetter: number;
+};
+
+type PollsSummary = {
+	totalResponses: number;
+	totalPolls: number;
+	activePolls: number;
+	draftPolls: number;
+	completedPolls: number;
+};
+
 const pollsRoutes = {
 	getPolls: "/poll/polls",
+	pollsSummary: "/poll/polls/summary",
+	queueHealth: "/poll/polls/realtime/queue-health",
 	createPoll: "/poll/polls",
 	poll: (pollId: string) => `/poll/polls/${pollId}`,
 	publicPoll: (slug: string) => `/poll/public/poll/${slug}`,
@@ -173,6 +193,14 @@ const pollsRoutes = {
 const pollService = {
 	async getAllPolls() {
 		return await apiGet<Poll[]>(pollsRoutes.getPolls);
+	},
+
+	async getPollsSummary() {
+		return await apiGet<PollsSummary>(pollsRoutes.pollsSummary);
+	},
+
+	async getVoteQueueHealth() {
+		return await apiGet<VoteQueueHealth>(pollsRoutes.queueHealth);
 	},
 
 	async getPollById(pollId: string) {
@@ -237,11 +265,13 @@ export type {
 	AddQuestionPayload,
 	CreatePollPayload,
 	Poll,
+	PollsSummary,
 	PollDetail,
 	PollResults,
 	PollQuestion,
 	PublicPoll,
 	PublicPollLiveMetrics,
+	VoteQueueHealth,
 	SubmittedPollResponse,
 	SubmitPollResponsePayload,
 	UpdatePollPayload,

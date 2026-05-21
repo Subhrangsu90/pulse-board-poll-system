@@ -4,6 +4,9 @@ import { clearCookie, setCookie } from "../../common/utils/auth.utils";
 import { env } from "../../config/env";
 import * as authService from "./auth.service";
 import { ok } from "../../common/utils/api.response";
+import { parseSchema } from "../../common/utils/validation";
+import { updateUserPreferencesSchema } from "./dto/preferences.dto";
+import * as preferencesService from "./preferences.service";
 
 const loginUser = async (req: Request, res: Response) => {
 	if (!env.oidcClientId || !env.oidcClientSecret) {
@@ -97,4 +100,34 @@ const logoutUser = async (req: Request, res: Response) => {
 	return ok(res, "Logged out successfully");
 };
 
-export { loginUser, registerUser, handleCallback, logoutUser, getCurrentUser, getOptionalCurrentUser };
+const getUserPreferences = async (req: Request, res: Response) => {
+	if (!req.user?.id) {
+		return unauthorized("Authentication required.");
+	}
+
+	const preferences = await preferencesService.getUserPreferences(req.user.id);
+
+	return ok(res, "User preferences fetched successfully", preferences);
+};
+
+const updateUserPreferences = async (req: Request, res: Response) => {
+	if (!req.user?.id) {
+		return unauthorized("Authentication required.");
+	}
+
+	const input = parseSchema(updateUserPreferencesSchema, req.body);
+	const preferences = await preferencesService.upsertUserPreferences(req.user.id, input);
+
+	return ok(res, "User preferences updated successfully", preferences);
+};
+
+export {
+	loginUser,
+	registerUser,
+	handleCallback,
+	logoutUser,
+	getCurrentUser,
+	getOptionalCurrentUser,
+	getUserPreferences,
+	updateUserPreferences,
+};
