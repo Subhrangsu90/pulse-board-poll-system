@@ -3,7 +3,14 @@ import { Dialog } from "../components/Dialog";
 import { useToast } from "../components/toastContext";
 import { authService, type CurrentUser } from "../services/api/authService";
 import { getApiErrorMessage } from "../services/api/apiService";
-import { pollService, type PublicPoll } from "../services/api/pollService";
+import { pollService, type PublicPoll, type PublicPollLiveMetrics } from "../services/api/pollService";
+import {
+	createPollSocket,
+	joinPollRoom,
+	leavePollRoom,
+	type PollAnalyticsEvent,
+	type PollVoteEvent,
+} from "../services/realtime/pollSocket";
 
 type Answers = Record<string, string | string[]>;
 
@@ -33,6 +40,7 @@ export default function PublicPoll() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitted, setIsSubmitted] = useState(false);
+	const [liveMetrics, setLiveMetrics] = useState<PublicPollLiveMetrics | null>(null);
 
 	const showError = useCallback(
 		(message: string) => {
@@ -51,7 +59,9 @@ export default function PublicPoll() {
 			setIsSubmitting(false);
 
 			try {
-				setPoll(await pollService.getPublicPollBySlug(slug));
+				const loadedPoll = await pollService.getPublicPollBySlug(slug);
+				setPoll(loadedPoll);
+				setLiveMetrics(await pollService.getPublicPollLiveMetrics(slug));
 			} catch (loadError) {
 				console.error("Unable to load public poll:", loadError);
 				showError(
@@ -65,6 +75,47 @@ export default function PublicPoll() {
 			}
 		})();
 	}, [showError, slug]);
+
+	useEffect(() => {
+		if (!poll) return;
+
+		const socket = createPollSocket();
+		const joinCurrentPoll = () => joinPollRoom(socket, poll.id);
+
+		socket.on("connect", joinCurrentPoll);
+		joinCurrentPoll();
+
+		socket.on("poll:vote", (event: PollVoteEvent) => {
+			if (event.pollId !== poll.id) return;
+
+			setLiveMetrics((currentMetrics) => ({
+				pollId: poll.id,
+				liveCounts: {
+					...(currentMetrics?.liveCounts ?? {}),
+					[event.optionId]: event.count,
+				},
+				totalVotes: event.totalVotes,
+				activeViewers: currentMetrics?.activeViewers ?? 0,
+			}));
+		});
+
+		socket.on("poll:analytics", (event: PollAnalyticsEvent) => {
+			if (event.pollId !== poll.id) return;
+
+			setLiveMetrics((currentMetrics) => ({
+				pollId: poll.id,
+				liveCounts: currentMetrics?.liveCounts ?? {},
+				totalVotes: event.totalVotes ?? currentMetrics?.totalVotes ?? 0,
+				activeViewers: event.activeViewers ?? currentMetrics?.activeViewers ?? 0,
+				regions: event.regions ?? currentMetrics?.regions,
+			}));
+		});
+
+		return () => {
+			leavePollRoom(socket, poll.id);
+			socket.disconnect();
+		};
+	}, [poll]);
 
 	const checkCurrentUser = useCallback(async () => {
 		setIsCheckingAuth(true);
@@ -160,7 +211,7 @@ export default function PublicPoll() {
 		setIsSubmitting(true);
 
 		try {
-			await pollService.submitPublicPollResponse(slug, {
+			const submittedResponse = await pollService.submitPublicPollResponse(slug, {
 				answers: Object.entries(answers)
 					.map(([questionId, answer]) => ({
 						questionId,
@@ -168,6 +219,16 @@ export default function PublicPoll() {
 					}))
 					.filter((answer) => answer.optionIds.length > 0),
 			});
+			setLiveMetrics((currentMetrics) => ({
+				pollId: submittedResponse.pollId,
+				liveCounts: {
+					...(currentMetrics?.liveCounts ?? {}),
+					...submittedResponse.liveCounts,
+				},
+				totalVotes: submittedResponse.totalVotes,
+				activeViewers: currentMetrics?.activeViewers ?? 0,
+				regions: currentMetrics?.regions,
+			}));
 			setError(null);
 			setIsSubmitted(true);
 		} catch (submitError) {
@@ -411,6 +472,16 @@ export default function PublicPoll() {
 						questionCount={poll.questions.length}
 						requiredCount={requiredCount}
 					/>
+					<LivePollCard
+						metrics={liveMetrics}
+						poll={poll}
+					/>
+					<a
+						className="flex items-center justify-center gap-xs rounded-full bg-primary-container px-lg py-sm font-label-lg text-on-primary-container"
+						href={`/public/poll/${slug}/results`}>
+						<span className="material-symbols-outlined text-[18px]">bar_chart</span>
+						View results
+					</a>
 				</aside>
 			</div>
 
@@ -572,6 +643,61 @@ function ResponseProgressCard({
 	);
 }
 
+function LivePollCard({
+	metrics,
+	poll,
+}: {
+	metrics: PublicPollLiveMetrics | null;
+	poll: PublicPoll;
+}) {
+	const topOption = poll.questions
+		.flatMap((question) => question.options)
+		.map((option) => ({
+			...option,
+			count: metrics?.liveCounts[option.id] ?? 0,
+		}))
+		.sort((left, right) => right.count - left.count)[0];
+	const topRegion = Object.entries(metrics?.regions ?? {})
+		.map(([region, count]) => ({ region, count }))
+		.sort((left, right) => right.count - left.count)[0];
+
+	return (
+		<section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg shadow-sm">
+			<div className="mb-md flex items-center justify-between gap-md">
+				<h2 className="font-title-lg text-title-lg text-primary">
+					Live activity
+				</h2>
+				<span className="flex items-center gap-xs rounded-full bg-primary-fixed px-3 py-1 font-label-md text-label-md text-on-primary-fixed">
+					<span className="h-2 w-2 rounded-full bg-primary" />
+					Live
+				</span>
+			</div>
+			<div className="grid grid-cols-2 gap-sm">
+				<SummaryMetric
+					icon="how_to_vote"
+					label="Votes"
+					value={`${metrics?.totalVotes ?? 0}`}
+				/>
+				<SummaryMetric
+					icon="visibility"
+					label="Viewing"
+					value={`${metrics?.activeViewers ?? 0}`}
+				/>
+			</div>
+			{topOption ? (
+				<p className="mt-md rounded-lg bg-surface-container-low px-md py-sm font-body-md text-body-md text-on-surface-variant">
+					Top option: <span className="font-label-lg text-primary">{topOption.optionText}</span>
+				</p>
+			) : null}
+			{topRegion ? (
+				<p className="mt-sm rounded-lg bg-surface-container-low px-md py-sm font-body-md text-body-md text-on-surface-variant">
+					Top region: <span className="font-label-lg text-primary">{topRegion.region}</span>
+				</p>
+			) : null}
+		</section>
+	);
+}
+
 function AuthRequiredDialog({ isOpen }: { isOpen: boolean }) {
 	return (
 		<Dialog
@@ -646,7 +772,7 @@ function ResponseSubmittedDialog({
 					Back to poll
 				</button>
 			}
-			description="Thanks for responding. Vote persistence is the next backend step."
+			description="Thanks for responding. Your vote is live now and will be persisted in the background."
 			icon="check_circle"
 			isOpen={isOpen}
 			onClose={onClose}

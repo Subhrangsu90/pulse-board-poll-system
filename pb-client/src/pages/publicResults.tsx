@@ -1,0 +1,223 @@
+import { useEffect, useMemo, useState } from "react";
+import { getApiErrorMessage } from "../services/api/apiService";
+import { pollService, type PollResults } from "../services/api/pollService";
+import {
+	createPollSocket,
+	joinPollRoom,
+	leavePollRoom,
+	type PollAnalyticsEvent,
+	type PollVoteEvent,
+} from "../services/realtime/pollSocket";
+
+function getSlugFromPath() {
+	const match = window.location.pathname.match(/\/public\/poll\/([^/]+)\/results$/);
+	return match?.[1] ?? "";
+}
+
+function applyLiveVote(results: PollResults, event: PollVoteEvent) {
+	if (results.poll.id !== event.pollId) return results;
+
+	const questions = results.questions.map((question) => {
+		const hasOption = question.options.some((option) => option.id === event.optionId);
+		if (!hasOption) return question;
+
+		const options = question.options.map((option) => ({
+			...option,
+			selectionCount: option.id === event.optionId ? event.count : option.selectionCount,
+		}));
+		const totalSelections = options.reduce((total, option) => total + option.selectionCount, 0);
+
+		return {
+			...question,
+			responseCount: Math.max(question.responseCount, event.totalVotes),
+			totalSelections,
+			options: options.map((option) => ({
+				...option,
+				percentage: totalSelections === 0 ? 0 : Math.round((option.selectionCount / totalSelections) * 100),
+			})),
+		};
+	});
+
+	return {
+		...results,
+		summary: {
+			...results.summary,
+			totalResponses: Math.max(results.summary.totalResponses, event.totalVotes),
+			totalAnswerSelections: questions.reduce((total, question) => total + question.totalSelections, 0),
+			lastSubmittedAt: event.submittedAt ?? new Date().toISOString(),
+		},
+		questions,
+	};
+}
+
+export default function PublicResults() {
+	const slug = getSlugFromPath();
+	const [results, setResults] = useState<PollResults | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		void (async () => {
+			setIsLoading(true);
+			setError(null);
+
+			try {
+				setResults(await pollService.getPublicPollResults(slug));
+			} catch (loadError) {
+				setError(getApiErrorMessage(loadError, "Poll results are not available."));
+			} finally {
+				setIsLoading(false);
+			}
+		})();
+	}, [slug]);
+
+	useEffect(() => {
+		if (!results?.poll.id) return;
+
+		const socket = createPollSocket();
+		const pollId = results.poll.id;
+		const join = () => joinPollRoom(socket, pollId);
+
+		socket.on("connect", join);
+		join();
+		socket.on("poll:vote", (event: PollVoteEvent) => {
+			setResults((currentResults) => (currentResults ? applyLiveVote(currentResults, event) : currentResults));
+		});
+		socket.on("poll:analytics", (event: PollAnalyticsEvent) => {
+			if (event.pollId !== pollId) return;
+
+			setResults((currentResults) =>
+				currentResults
+					? {
+							...currentResults,
+							summary: {
+								...currentResults.summary,
+								activeViewers: event.activeViewers ?? currentResults.summary.activeViewers,
+								regions: event.regions ?? currentResults.summary.regions,
+							},
+						}
+					: currentResults
+			);
+		});
+
+		return () => {
+			leavePollRoom(socket, pollId);
+			socket.disconnect();
+		};
+	}, [results?.poll.id]);
+
+	const topRegions = useMemo(
+		() =>
+			Object.entries(results?.summary.regions ?? {})
+				.filter(([, count]) => count > 0)
+				.sort((left, right) => right[1] - left[1])
+				.slice(0, 4),
+		[results?.summary.regions]
+	);
+
+	if (isLoading) {
+		return <main className="min-h-screen bg-surface p-xl text-on-surface">Loading results...</main>;
+	}
+
+	if (error || !results) {
+		return (
+			<main className="min-h-screen bg-surface p-xl text-on-surface">
+				<p className="mx-auto max-w-3xl rounded-xl border border-error-container bg-error-container p-xl text-on-error-container">
+					{error ?? "Poll results are not available."}
+				</p>
+			</main>
+		);
+	}
+
+	return (
+		<main className="min-h-screen bg-surface text-on-surface">
+			<section className="mx-auto max-w-6xl space-y-gutter px-md py-xl">
+				<header className="border-b border-outline-variant pb-lg">
+					<div className="mb-sm flex flex-wrap items-center gap-sm">
+						<span className="rounded-full bg-primary-fixed px-3 py-1 font-label-md text-label-md text-on-primary-fixed">
+							{results.poll.status === "active" ? "Live results" : "Final results"}
+						</span>
+						<span className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant">
+							{results.summary.activeViewers ?? 0} viewing
+						</span>
+					</div>
+					<h1 className="font-serif text-display-md text-primary">{results.poll.title}</h1>
+					{results.poll.description ? (
+						<p className="mt-sm max-w-3xl font-body-lg text-on-surface-variant">
+							{results.poll.description}
+						</p>
+					) : null}
+				</header>
+
+				<div className="grid grid-cols-1 gap-gutter md:grid-cols-3">
+					<Metric label="Responses" value={results.summary.totalResponses} />
+					<Metric label="Selections" value={results.summary.totalAnswerSelections} />
+					<Metric label="Authenticated" value={results.summary.authenticatedResponses} />
+				</div>
+
+				<section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+					<h2 className="mb-md font-serif text-title-lg text-primary">Live Audience Origin</h2>
+					{topRegions.length === 0 ? (
+						<p className="font-body-md text-on-surface-variant">No live viewers right now.</p>
+					) : (
+						<div className="space-y-sm">
+							{topRegions.map(([region, count]) => (
+								<div key={region}>
+									<div className="mb-xs flex justify-between font-label-lg text-label-lg">
+										<span>{region}</span>
+										<span className="text-primary">{count}</span>
+									</div>
+									<div className="h-2 overflow-hidden rounded-full bg-surface-container-high">
+										<div
+											className="h-full rounded-full bg-primary-container"
+											style={{ width: `${Math.max(8, (count / Math.max(results.summary.activeViewers ?? 1, 1)) * 100)}%` }}
+										/>
+									</div>
+								</div>
+							))}
+						</div>
+					)}
+				</section>
+
+				<section className="space-y-lg">
+					{results.questions.map((question, questionIndex) => (
+						<article
+							className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg"
+							key={question.id}>
+							<h2 className="mb-sm font-title-lg text-title-lg text-on-surface">
+								{questionIndex + 1}. {question.questionText}
+							</h2>
+							<div className="space-y-md">
+								{question.options.map((option) => (
+									<div key={option.id}>
+										<div className="mb-xs flex justify-between gap-md font-label-lg text-label-lg">
+											<span>{option.optionText}</span>
+											<span className="text-primary">
+												{option.selectionCount} ({option.percentage}%)
+											</span>
+										</div>
+										<div className="h-2 overflow-hidden rounded-full bg-surface-container-high">
+											<div
+												className="h-full rounded-full bg-secondary-container"
+												style={{ width: `${option.percentage}%` }}
+											/>
+										</div>
+									</div>
+								))}
+							</div>
+						</article>
+					))}
+				</section>
+			</section>
+		</main>
+	);
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+	return (
+		<div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+			<p className="font-label-md text-label-md uppercase text-on-surface-variant">{label}</p>
+			<p className="font-display-lg text-3xl font-bold text-primary">{value}</p>
+		</div>
+	);
+}

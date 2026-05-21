@@ -9,8 +9,21 @@ import { answers } from "./model/answers.model";
 import { options } from "./model/options.model";
 import { polls } from "./model/polls.model";
 import { questions } from "./model/questions.model";
-import { responses } from "./model/responses.model";
 import { responseSessions } from "./model/responseSessions.model";
+import { responses } from "./model/responses.model";
+import {
+	claimVoteOnce,
+	releaseVoteClaim,
+} from "./realtime/duplicate-vote.service";
+import { enqueueVote, getVoteQueueHealth } from "./realtime/vote.queue";
+import {
+	getPollLiveMetrics,
+	incrementVoteCounters,
+	rollbackVoteCounters,
+} from "./realtime/redis-counter.service";
+import { publishPollAnalytics, publishVoteEvents } from "./realtime/realtime-broadcast.service";
+import { recordVoteAnalytics } from "./realtime/vote-analytics.service";
+import type { VoteAcceptedResult } from "./realtime/vote.types";
 
 type PollTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -150,6 +163,127 @@ const getPollById = async (pollId: string, creatorId: string) => {
 	};
 };
 
+const getPollResults = async (pollId: string, creatorId: string) => {
+	await expireDuePolls();
+
+	const [poll] = await db
+		.select()
+		.from(polls)
+		.where(and(eq(polls.id, pollId), eq(polls.creatorId, creatorId)))
+		.limit(1);
+
+	if (!poll) {
+		throw notFound("Poll not found.");
+	}
+
+	const pollQuestions = await db
+		.select()
+		.from(questions)
+		.where(eq(questions.pollId, poll.id))
+		.orderBy(asc(questions.orderIndex));
+
+	const questionIds = pollQuestions.map((question) => question.id);
+	const pollOptions =
+		questionIds.length > 0
+			? await db
+					.select()
+					.from(options)
+					.where(inArray(options.questionId, questionIds))
+					.orderBy(asc(options.orderIndex))
+			: [];
+	const optionIds = pollOptions.map((option) => option.id);
+	const liveMetrics = await getPollLiveMetrics(poll.id, optionIds);
+
+	const dbResponses = await db
+		.select()
+		.from(responses)
+		.where(eq(responses.pollId, poll.id))
+		.orderBy(desc(responses.submittedAt));
+	const responseIds = dbResponses.map((response) => response.id);
+	const dbAnswers =
+		responseIds.length > 0
+			? await db.select().from(answers).where(inArray(answers.responseId, responseIds))
+			: [];
+
+	const optionSelectionCounts = new Map<string, number>();
+	const responseIdsByQuestion = new Map<string, Set<string>>();
+
+	for (const answer of dbAnswers) {
+		optionSelectionCounts.set(
+			answer.optionId,
+			(optionSelectionCounts.get(answer.optionId) ?? 0) + 1
+		);
+
+		const responseSet = responseIdsByQuestion.get(answer.questionId) ?? new Set<string>();
+		responseSet.add(answer.responseId);
+		responseIdsByQuestion.set(answer.questionId, responseSet);
+	}
+
+	const questionsWithResults = pollQuestions.map((question) => {
+		const questionOptions = pollOptions.filter((option) => option.questionId === question.id);
+		const optionsWithCounts = questionOptions.map((option) => ({
+			id: option.id,
+			optionText: option.optionText,
+			orderIndex: option.orderIndex,
+			selectionCount: Math.max(
+				optionSelectionCounts.get(option.id) ?? 0,
+				liveMetrics.liveCounts[option.id] ?? 0
+			),
+			percentage: 0,
+		}));
+		const totalSelections = optionsWithCounts.reduce(
+			(total, option) => total + option.selectionCount,
+			0
+		);
+
+		return {
+			id: question.id,
+			questionText: question.questionText,
+			questionType: question.questionType,
+			isRequired: question.isRequired,
+			orderIndex: question.orderIndex,
+			responseCount: Math.max(responseIdsByQuestion.get(question.id)?.size ?? 0, liveMetrics.totalVotes),
+			totalSelections,
+			options: optionsWithCounts.map((option) => ({
+				...option,
+				percentage: totalSelections === 0 ? 0 : Math.round((option.selectionCount / totalSelections) * 100),
+			})),
+		};
+	});
+
+	return {
+		poll: {
+			id: poll.id,
+			title: poll.title,
+			description: poll.description,
+			tags: poll.tags,
+			responseMode: poll.responseMode,
+			expiresAt: poll.expiresAt,
+			status: poll.status,
+			publicSlug: poll.publicSlug,
+			createdAt: poll.createdAt,
+			updatedAt: poll.updatedAt,
+		},
+		summary: {
+			totalResponses: Math.max(dbResponses.length, liveMetrics.totalVotes),
+			totalAnswerSelections: Math.max(dbAnswers.length, questionsWithResults.reduce((total, question) => total + question.totalSelections, 0)),
+			anonymousResponses: dbResponses.filter((response) => response.isAnonymous).length,
+			authenticatedResponses: dbResponses.filter((response) => !response.isAnonymous).length,
+			lastSubmittedAt: dbResponses[0]?.submittedAt ?? null,
+			activeViewers: liveMetrics.activeViewers,
+			regions: liveMetrics.regions,
+		},
+		questions: questionsWithResults,
+		recentResponses: dbResponses.slice(0, 10).map((response) => ({
+			id: response.id,
+			submittedAt: response.submittedAt,
+			isAnonymous: response.isAnonymous,
+			answerCount: dbAnswers.filter((answer) => answer.responseId === response.id).length,
+			status: "recorded" as const,
+		})),
+	};
+};
+
 const getPublicPollBySlug = async (publicSlug: string) => {
 	await expireDuePolls();
 
@@ -210,7 +344,53 @@ const getPublicPollBySlug = async (publicSlug: string) => {
 	};
 };
 
-const submitPublicPollResponse = async (input: SubmitPollResponseInput) => {
+const getPublicPollResultsBySlug = async (publicSlug: string) => {
+	await expireDuePolls();
+
+	const [poll] = await db
+		.select({ id: polls.id, creatorId: polls.creatorId, status: polls.status, isPublished: polls.isPublished })
+		.from(polls)
+		.where(eq(polls.publicSlug, publicSlug))
+		.limit(1);
+
+	if (!poll || poll.status === "draft") {
+		throw notFound("Poll results are not available.");
+	}
+
+	// Public result pages are available after the poll starts, including live active polls
+	// and final expired/completed polls.
+	if (!poll.isPublished && poll.status === "active") {
+		throw notFound("Poll results are not available.");
+	}
+
+	return getPollResults(poll.id, poll.creatorId);
+};
+
+const hasPersistedVoteSession = async (input: {
+	pollId: string;
+	isAnonymous: boolean;
+	userId?: string | null;
+	anonymousIdentifier?: string | null;
+}) => {
+	const existingSessions = await db
+		.select({ id: responseSessions.id })
+		.from(responseSessions)
+		.where(
+			input.isAnonymous
+				? and(
+						eq(responseSessions.pollId, input.pollId),
+						eq(responseSessions.anonymousIdentifier, input.anonymousIdentifier!)
+					)
+				: and(eq(responseSessions.pollId, input.pollId), eq(responseSessions.userId, input.userId!))
+		)
+		.limit(1);
+
+	return existingSessions.length > 0;
+};
+
+const submitPublicPollResponse = async (
+	input: SubmitPollResponseInput & { deviceFingerprint: string }
+): Promise<VoteAcceptedResult> => {
 	await expireDuePolls();
 
 	const [poll] = await db
@@ -229,31 +409,15 @@ const submitPublicPollResponse = async (input: SubmitPollResponseInput) => {
 		throw notFound("Poll not found or not published.");
 	}
 
-	const isAnonymous = poll.responseMode === "anonymous";
+	const requiresAuthentication = poll.responseMode === "authenticated";
+	const isAnonymous = !input.userId;
 
-	if (!isAnonymous && !input.userId) {
+	if (requiresAuthentication && !input.userId) {
 		throw unauthorized("Authentication required to submit this poll.");
 	}
 
 	if (isAnonymous && !input.anonymousIdentifier) {
 		throw badRequest("Anonymous response session is required.");
-	}
-
-	const existingSessions = await db
-		.select({ id: responseSessions.id })
-		.from(responseSessions)
-		.where(
-			isAnonymous
-				? and(
-						eq(responseSessions.pollId, poll.id),
-						eq(responseSessions.anonymousIdentifier, input.anonymousIdentifier!)
-					)
-				: and(eq(responseSessions.pollId, poll.id), eq(responseSessions.userId, input.userId!))
-		)
-		.limit(1);
-
-	if (existingSessions.length > 0) {
-		throw conflict("This participant has already submitted a response.");
 	}
 
 	const pollQuestions = await db
@@ -311,43 +475,94 @@ const submitPublicPollResponse = async (input: SubmitPollResponseInput) => {
 		}
 	}
 
-	return db.transaction(async (tx) => {
-		await tx.insert(responseSessions).values({
+	const alreadyPersisted = await hasPersistedVoteSession({
+		pollId: poll.id,
+		isAnonymous,
+		userId: input.userId,
+		anonymousIdentifier: input.anonymousIdentifier,
+	});
+
+	if (alreadyPersisted) {
+		throw conflict("This participant has already submitted a response.");
+	}
+
+	const didClaimVote = await claimVoteOnce(poll.id, input.deviceFingerprint);
+
+	if (!didClaimVote) {
+		throw conflict("This participant has already submitted a response.");
+	}
+
+	const selectedOptionIds = Array.from(submittedAnswers.values()).flat();
+
+	try {
+		const { liveCounts, totalVotes } = await incrementVoteCounters(
+			poll.id,
+			selectedOptionIds,
+			poll.expiresAt
+		);
+		const submittedAt = new Date().toISOString();
+		const submissionId = randomUUID();
+
+		await publishVoteEvents(poll.id, liveCounts, totalVotes, {
+			submissionId,
+			isAnonymous,
+			answerCount: selectedOptionIds.length,
+			submittedAt,
+		});
+		await recordVoteAnalytics(poll.id, selectedOptionIds);
+		await publishPollAnalytics(poll.id, { totalVotes });
+
+		await enqueueVote({
 			pollId: poll.id,
-			userId: isAnonymous ? null : input.userId,
-			anonymousIdentifier: isAnonymous ? input.anonymousIdentifier : null,
+			publicSlug: poll.publicSlug ?? input.publicSlug,
+			userId: isAnonymous ? null : (input.userId ?? null),
+			anonymousIdentifier: isAnonymous ? (input.anonymousIdentifier ?? null) : null,
+			isAnonymous,
+			ipAddress: input.ipAddress ?? null,
+			deviceFingerprint: input.deviceFingerprint,
+			answers: input.answers,
+			submittedAt,
 		});
 
-		const [createdResponse] = await tx
-			.insert(responses)
-			.values({
-				pollId: poll.id,
-				userId: isAnonymous ? null : input.userId,
-				anonymousUserIdentifier: isAnonymous ? input.anonymousIdentifier : null,
-				isAnonymous,
-				ipAddress: input.ipAddress ?? null,
-			})
-			.returning();
-
-		if (!createdResponse) {
-			throw internal("Unable to submit response.");
-		}
-
-		const answerRows = Array.from(submittedAnswers.entries()).flatMap(([questionId, optionIds]) =>
-			optionIds.map((optionId) => ({
-				responseId: createdResponse.id,
-				questionId,
-				optionId,
-			}))
-		);
-
-		const createdAnswers = await tx.insert(answers).values(answerRows).returning();
-
 		return {
-			...createdResponse,
-			answers: createdAnswers,
+			pollId: poll.id,
+			queued: true,
+			isAnonymous,
+			liveCounts,
+			totalVotes,
 		};
-	});
+	} catch (error) {
+		await rollbackVoteCounters(poll.id, selectedOptionIds);
+		await releaseVoteClaim(poll.id, input.deviceFingerprint);
+		throw error;
+	}
+};
+
+const getPublicPollLiveMetrics = async (publicSlug: string) => {
+	const [poll] = await db
+		.select({ id: polls.id })
+		.from(polls)
+		.where(eq(polls.publicSlug, publicSlug))
+		.limit(1);
+
+	if (!poll) {
+		throw notFound("Poll not found.");
+	}
+
+	const pollQuestions = await db
+		.select({ id: questions.id })
+		.from(questions)
+		.where(eq(questions.pollId, poll.id));
+	const questionIds = pollQuestions.map((question) => question.id);
+	const pollOptions =
+		questionIds.length > 0
+			? await db.select({ id: options.id }).from(options).where(inArray(options.questionId, questionIds))
+			: [];
+
+	return getPollLiveMetrics(
+		poll.id,
+		pollOptions.map((option) => option.id)
+	);
 };
 
 const updateQuestion = async (questionId: string, creatorId: string, input: QuestionInput) => {
@@ -563,6 +778,10 @@ export {
 	expireDuePolls,
 	getAllPolls,
 	getPollById,
+	getPollResults,
+	getPublicPollLiveMetrics,
+	getPublicPollResultsBySlug,
+	getVoteQueueHealth,
 	getPublicPollBySlug,
 	submitPublicPollResponse,
 	publishPoll,

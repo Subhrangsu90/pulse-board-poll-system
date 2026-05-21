@@ -71,6 +71,8 @@ type PollResults = {
 		anonymousResponses: number;
 		authenticatedResponses: number;
 		lastSubmittedAt: string | null;
+		activeViewers?: number;
+		regions?: Record<string, number>;
 	};
 	questions: Array<{
 		id: string;
@@ -93,7 +95,7 @@ type PollResults = {
 		submittedAt: string | null;
 		isAnonymous: boolean;
 		answerCount: number;
-		status: "recorded";
+		status: "recorded" | "queued";
 	}>;
 };
 
@@ -138,20 +140,19 @@ type SubmitPollResponsePayload = {
 };
 
 type SubmittedPollResponse = {
-	id: string;
 	pollId: string;
-	userId: string | null;
-	anonymousUserIdentifier: string | null;
+	queued: true;
 	isAnonymous: boolean;
-	submittedAt: string | null;
-	ipAddress: string | null;
-	answers: Array<{
-		id: string;
-		responseId: string;
-		questionId: string;
-		optionId: string;
-		createdAt: string | null;
-	}>;
+	liveCounts: Record<string, number>;
+	totalVotes: number;
+};
+
+type PublicPollLiveMetrics = {
+	pollId: string;
+	liveCounts: Record<string, number>;
+	totalVotes: number;
+	activeViewers: number;
+	regions?: Record<string, number>;
 };
 
 const pollsRoutes = {
@@ -159,6 +160,8 @@ const pollsRoutes = {
 	createPoll: "/poll/polls",
 	poll: (pollId: string) => `/poll/polls/${pollId}`,
 	publicPoll: (slug: string) => `/poll/public/poll/${slug}`,
+	publicPollMetrics: (slug: string) => `/poll/public/poll/${slug}/metrics`,
+	publicPollResults: (slug: string) => `/poll/public/poll/${slug}/results`,
 	publicPollResponses: (slug: string) => `/poll/public/poll/${slug}/responses`,
 	pollResults: (pollId: string) => `/poll/polls/${pollId}/results`,
 	addQuestion: (pollId: string) => `/poll/polls/${pollId}/questions`,
@@ -182,6 +185,14 @@ const pollService = {
 
 	async getPublicPollBySlug(slug: string) {
 		return await apiGet<PublicPoll>(pollsRoutes.publicPoll(slug));
+	},
+
+	async getPublicPollLiveMetrics(slug: string) {
+		return await apiGet<PublicPollLiveMetrics>(pollsRoutes.publicPollMetrics(slug));
+	},
+
+	async getPublicPollResults(slug: string) {
+		return await apiGet<PollResults>(pollsRoutes.publicPollResults(slug));
 	},
 
 	async submitPublicPollResponse(slug: string, payload: SubmitPollResponsePayload) {
@@ -230,6 +241,7 @@ export type {
 	PollResults,
 	PollQuestion,
 	PublicPoll,
+	PublicPollLiveMetrics,
 	SubmittedPollResponse,
 	SubmitPollResponsePayload,
 	UpdatePollPayload,

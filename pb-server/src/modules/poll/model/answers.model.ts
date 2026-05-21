@@ -1,4 +1,4 @@
-import { pgTable, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { index, pgTable, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { options } from "./options.model";
 import { questions } from "./questions.model";
 import { responses } from "./responses.model";
@@ -19,6 +19,8 @@ export const answers = pgTable(
 		createdAt: timestamp("created_at").defaultNow(),
 	},
 	(table) => [
+		index("answers_option_created_at_idx").on(table.optionId, table.createdAt),
+		index("answers_question_option_idx").on(table.questionId, table.optionId),
 		uniqueIndex("answers_response_option_unique").on(table.responseId, table.optionId),
 	],
 );

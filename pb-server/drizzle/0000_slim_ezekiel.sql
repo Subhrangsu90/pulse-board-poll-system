@@ -85,6 +85,15 @@ ALTER TABLE "response_sessions" ADD CONSTRAINT "response_sessions_user_id_users_
 ALTER TABLE "answers" ADD CONSTRAINT "answers_response_id_responses_id_fk" FOREIGN KEY ("response_id") REFERENCES "public"."responses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "answers" ADD CONSTRAINT "answers_question_id_questions_id_fk" FOREIGN KEY ("question_id") REFERENCES "public"."questions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "answers" ADD CONSTRAINT "answers_option_id_options_id_fk" FOREIGN KEY ("option_id") REFERENCES "public"."options"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "polls_creator_created_at_idx" ON "polls" USING btree ("creator_id","created_at");--> statement-breakpoint
+CREATE INDEX "polls_active_expires_at_idx" ON "polls" USING btree ("expires_at") WHERE "polls"."status" = 'active';--> statement-breakpoint
+CREATE INDEX "questions_poll_order_idx" ON "questions" USING btree ("poll_id","order_index");--> statement-breakpoint
+CREATE INDEX "options_question_order_idx" ON "options" USING btree ("question_id","order_index");--> statement-breakpoint
+CREATE INDEX "responses_poll_submitted_at_idx" ON "responses" USING btree ("poll_id","submitted_at");--> statement-breakpoint
+CREATE INDEX "responses_user_idx" ON "responses" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "response_sessions_poll_created_at_idx" ON "response_sessions" USING btree ("poll_id","created_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "response_sessions_poll_user_unique" ON "response_sessions" USING btree ("poll_id","user_id") WHERE "response_sessions"."user_id" is not null;--> statement-breakpoint
 CREATE UNIQUE INDEX "response_sessions_poll_anonymous_unique" ON "response_sessions" USING btree ("poll_id","anonymous_identifier") WHERE "response_sessions"."anonymous_identifier" is not null;--> statement-breakpoint
+CREATE INDEX "answers_option_created_at_idx" ON "answers" USING btree ("option_id","created_at");--> statement-breakpoint
+CREATE INDEX "answers_question_option_idx" ON "answers" USING btree ("question_id","option_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "answers_response_option_unique" ON "answers" USING btree ("response_id","option_id");

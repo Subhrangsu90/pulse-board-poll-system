@@ -20,6 +20,13 @@ function trimTrailingSlash(value: string) {
 export const env = {
 	nodeEnv: process.env.NODE_ENV ?? "development",
 	port: parsePort(process.env.PORT),
+	redisUrl: process.env.REDIS_URL ?? "redis://localhost:6379",
+	voteQueueConcurrency: Number(process.env.VOTE_QUEUE_CONCURRENCY ?? 50),
+	voteBatchSize: Number(process.env.VOTE_BATCH_SIZE ?? 250),
+	voteBatchFlushMs: Number(process.env.VOTE_BATCH_FLUSH_MS ?? 1000),
+	voteDuplicateTtlSeconds: Number(process.env.VOTE_DUPLICATE_TTL_SECONDS ?? 60 * 60 * 24 * 365),
+	voteRateLimitWindowSeconds: Number(process.env.VOTE_RATE_LIMIT_WINDOW_SECONDS ?? 10),
+	voteRateLimitMax: Number(process.env.VOTE_RATE_LIMIT_MAX ?? 20),
 	oidcClientId: process.env.OIDC_CLIENT_ID,
 	oidcClientSecret: process.env.OIDC_CLIENT_SECRET,
 	oidcIssuer: trimTrailingSlash(process.env.OIDC_ISSUER ?? "http://localhost:3000"),

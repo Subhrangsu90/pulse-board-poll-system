@@ -1,8 +1,44 @@
-import { useEffect, useMemo, useState } from "react";
-import { io } from "socket.io-client";
+import { useEffect, useMemo, useRef, useState } from "react";
+import * as echarts from "echarts/core";
+import { BarChart, LineChart, PieChart, type BarSeriesOption, type LineSeriesOption, type PieSeriesOption } from "echarts/charts";
+import {
+	GridComponent,
+	LegendComponent,
+	TooltipComponent,
+	type GridComponentOption,
+	type LegendComponentOption,
+	type TooltipComponentOption,
+} from "echarts/components";
+import { CanvasRenderer } from "echarts/renderers";
 import { useToast } from "../components/toastContext";
-import { API_BASE_URL, getApiErrorMessage } from "../services/api/apiService";
+import { getApiErrorMessage } from "../services/api/apiService";
 import { pollService, type Poll, type PollResults } from "../services/api/pollService";
+import {
+	createPollSocket,
+	joinPollRoom,
+	leavePollRoom,
+	type PollAnalyticsEvent,
+	type PollVoteEvent,
+} from "../services/realtime/pollSocket";
+
+echarts.use([
+	BarChart,
+	CanvasRenderer,
+	GridComponent,
+	LegendComponent,
+	LineChart,
+	PieChart,
+	TooltipComponent,
+]);
+
+type EChartsOption = echarts.ComposeOption<
+	| BarSeriesOption
+	| GridComponentOption
+	| LegendComponentOption
+	| LineSeriesOption
+	| PieSeriesOption
+	| TooltipComponentOption
+>;
 
 function getInitialPollId() {
 	return new URLSearchParams(window.location.search).get("pollId");
@@ -25,15 +61,6 @@ function getPollLink(poll: PollResults["poll"]) {
 	return `${window.location.origin}/public/poll/${poll.publicSlug}`;
 }
 
-function getSocketUrl() {
-	if (API_BASE_URL.startsWith("http")) {
-		const url = new URL(API_BASE_URL);
-		return url.origin;
-	}
-
-	return window.location.origin;
-}
-
 function getTimeRemaining(expiresAt: string) {
 	const diffMs = new Date(expiresAt).getTime() - Date.now();
 
@@ -52,6 +79,127 @@ function getStatusClass(status: Poll["status"]) {
 	if (status === "completed") return "bg-secondary-container text-on-secondary-container";
 	if (status === "expired") return "bg-error-container text-on-error-container";
 	return "bg-surface-container-high text-on-surface-variant";
+}
+
+function applyLiveVote(results: PollResults, event: PollVoteEvent): PollResults {
+	if (results.poll.id !== event.pollId) return results;
+
+	const queuedResponseId = `queued-${event.submissionId ?? `${event.pollId}-${event.submittedAt ?? Date.now()}`}`;
+	const isNewSubmission = !results.recentResponses.some(
+		(response) => response.id === queuedResponseId
+	);
+	const questions = results.questions.map((question) => {
+		const hasOption = question.options.some((option) => option.id === event.optionId);
+
+		if (!hasOption) return question;
+
+		const options = question.options.map((option) => ({
+			...option,
+			selectionCount: option.id === event.optionId ? event.count : option.selectionCount,
+		}));
+		const totalSelections = options.reduce((total, option) => total + option.selectionCount, 0);
+
+		return {
+			...question,
+			responseCount: Math.max(question.responseCount, event.totalVotes),
+			totalSelections,
+			options: options.map((option) => ({
+				...option,
+				percentage: totalSelections === 0 ? 0 : Math.round((option.selectionCount / totalSelections) * 100),
+			})),
+		};
+	});
+
+	return {
+		...results,
+		summary: {
+			...results.summary,
+			totalResponses: Math.max(results.summary.totalResponses, event.totalVotes),
+			totalAnswerSelections: questions.reduce(
+				(total, question) => total + question.totalSelections,
+				0
+			),
+			anonymousResponses:
+				isNewSubmission && (event.isAnonymous ?? true)
+					? results.summary.anonymousResponses + 1
+					: results.summary.anonymousResponses,
+			authenticatedResponses:
+				isNewSubmission && event.isAnonymous === false
+					? results.summary.authenticatedResponses + 1
+					: results.summary.authenticatedResponses,
+			lastSubmittedAt: new Date().toISOString(),
+		},
+		questions,
+		recentResponses: isNewSubmission
+			? [
+					{
+						id: queuedResponseId,
+						submittedAt: event.submittedAt ?? new Date().toISOString(),
+						isAnonymous: event.isAnonymous ?? true,
+						answerCount: event.answerCount ?? 1,
+						status: "queued" as const,
+					},
+					...results.recentResponses,
+				].slice(0, 10)
+			: results.recentResponses,
+	};
+}
+
+function preserveLiveResults(currentResults: PollResults | null, refreshedResults: PollResults) {
+	if (!currentResults || currentResults.poll.id !== refreshedResults.poll.id) {
+		return refreshedResults;
+	}
+
+	if (refreshedResults.summary.totalResponses >= currentResults.summary.totalResponses) {
+		return refreshedResults;
+	}
+
+	return {
+		...refreshedResults,
+		summary: {
+			...refreshedResults.summary,
+			totalResponses: currentResults.summary.totalResponses,
+			totalAnswerSelections: Math.max(
+				refreshedResults.summary.totalAnswerSelections,
+				currentResults.summary.totalAnswerSelections
+			),
+			anonymousResponses: Math.max(
+				refreshedResults.summary.anonymousResponses,
+				currentResults.summary.anonymousResponses
+			),
+			authenticatedResponses: Math.max(
+				refreshedResults.summary.authenticatedResponses,
+				currentResults.summary.authenticatedResponses
+			),
+			lastSubmittedAt: currentResults.summary.lastSubmittedAt,
+			activeViewers:
+				refreshedResults.summary.activeViewers ?? currentResults.summary.activeViewers,
+			regions: refreshedResults.summary.regions ?? currentResults.summary.regions,
+		},
+		questions: currentResults.questions,
+		recentResponses: currentResults.recentResponses,
+	};
+}
+
+function useEChart(option: EChartsOption) {
+	const chartRef = useRef<HTMLDivElement | null>(null);
+
+	useEffect(() => {
+		if (!chartRef.current) return;
+
+		const chart = echarts.init(chartRef.current);
+		chart.setOption(option);
+
+		const handleResize = () => chart.resize();
+		window.addEventListener("resize", handleResize);
+
+		return () => {
+			window.removeEventListener("resize", handleResize);
+			chart.dispose();
+		};
+	}, [option]);
+
+	return chartRef;
 }
 
 export default function Results() {
@@ -128,27 +276,60 @@ export default function Results() {
 	useEffect(() => {
 		if (!selectedPollId) return;
 
-		const socket = io(getSocketUrl(), {
-			withCredentials: true,
-		});
+		const socket = createPollSocket();
 
-		socket.emit("poll:results:join", selectedPollId);
-		socket.on("poll:results:update", (event: { pollId?: string }) => {
+		const joinSelectedPoll = () => joinPollRoom(socket, selectedPollId);
+
+		socket.on("connect", joinSelectedPoll);
+		joinSelectedPoll();
+
+		socket.on("poll:vote", (event: PollVoteEvent) => {
 			if (event.pollId !== selectedPollId) return;
 
 			setLivePulse(true);
 			window.setTimeout(() => setLivePulse(false), 1400);
-			void pollService
-				.getPollResults(selectedPollId)
-				.then(setResults)
-				.catch((loadError) => {
-					console.error("Unable to refresh live results:", loadError);
-					toast.error(getApiErrorMessage(loadError, "Unable to refresh live results."));
-				});
+			setResults((currentResults) =>
+				currentResults ? applyLiveVote(currentResults, event) : currentResults
+			);
+			window.setTimeout(() => {
+				void pollService
+					.getPollResults(selectedPollId)
+					.then((refreshedResults) => {
+						setResults((currentResults) =>
+							preserveLiveResults(currentResults, refreshedResults)
+						);
+					})
+					.catch((loadError) => {
+						console.error("Unable to refresh live results:", loadError);
+						toast.error(getApiErrorMessage(loadError, "Unable to refresh live results."));
+					});
+			}, 1800);
+		});
+
+		socket.on("poll:analytics", (event: PollAnalyticsEvent) => {
+			if (event.pollId !== selectedPollId) return;
+
+			setResults((currentResults) =>
+				currentResults
+					? {
+							...currentResults,
+							summary: {
+								...currentResults.summary,
+								activeViewers:
+									event.activeViewers ?? currentResults.summary.activeViewers ?? 0,
+								regions: event.regions ?? currentResults.summary.regions,
+								totalResponses:
+									event.totalVotes === undefined
+										? currentResults.summary.totalResponses
+										: Math.max(currentResults.summary.totalResponses, event.totalVotes),
+							},
+						}
+					: currentResults
+			);
 		});
 
 		return () => {
-			socket.emit("poll:results:leave", selectedPollId);
+			leavePollRoom(socket, selectedPollId);
 			socket.disconnect();
 		};
 	}, [selectedPollId, toast]);
@@ -267,6 +448,15 @@ export default function Results() {
 									{results.summary.totalAnswerSelections}
 								</p>
 							</div>
+							<div className="hidden h-10 w-px bg-outline-variant md:block" />
+							<div className="px-4">
+								<p className="font-label-md text-label-md uppercase text-on-surface-variant">
+									Live Viewers
+								</p>
+								<p className="font-display-lg text-2xl font-bold text-primary md:text-3xl">
+									{results.summary.activeViewers ?? 0}
+								</p>
+							</div>
 						</div>
 					) : null}
 					<div className="flex flex-col gap-sm md:flex-row md:items-center">
@@ -316,7 +506,7 @@ export default function Results() {
 					</div>
 
 					<div className="grid grid-cols-1 gap-gutter md:grid-cols-12">
-						<AudienceOriginPanel />
+						<AudienceOriginPanel results={results} />
 						<AudienceSegmentsPanel results={results} />
 					</div>
 
@@ -425,10 +615,35 @@ export default function Results() {
 }
 
 function ActivityInsights({ results }: { results: PollResults }) {
-	const path =
-		results.summary.totalResponses === 0
-			? "M0 80 Q20 80 40 80 Q60 80 80 80 Q90 80 100 80"
-			: "M0 80 Q10 70 20 60 Q30 50 40 70 Q50 90 60 40 Q70 10 80 30 Q90 50 100 10";
+	const chartOption = useMemo<EChartsOption>(
+		() => ({
+			color: ["#6750a4", "#b3261e"],
+			grid: { bottom: 24, left: 32, right: 12, top: 20 },
+			tooltip: { trigger: "axis" },
+			xAxis: {
+				type: "category",
+				boundaryGap: false,
+				data: ["Start", "25%", "50%", "75%", "Now"],
+			},
+			yAxis: { type: "value", minInterval: 1 },
+			series: [
+				{
+					type: "line",
+					smooth: true,
+					areaStyle: { opacity: 0.12 },
+					data: [
+						0,
+						Math.max(0, Math.round(results.summary.totalResponses * 0.2)),
+						Math.max(0, Math.round(results.summary.totalResponses * 0.45)),
+						Math.max(0, Math.round(results.summary.totalResponses * 0.7)),
+						results.summary.totalResponses,
+					],
+				},
+			],
+		}),
+		[results.summary.totalResponses]
+	);
+	const chartRef = useEChart(chartOption);
 
 	return (
 		<div className="space-y-md rounded-xl border border-outline-variant bg-surface-container p-md lg:col-span-7">
@@ -448,28 +663,10 @@ function ActivityInsights({ results }: { results: PollResults }) {
 					</p>
 				</div>
 			</div>
-			<div className="relative h-48 w-full rounded-lg bg-surface-container-low p-4">
-				<svg
-					className="h-full w-full"
-					preserveAspectRatio="none"
-					viewBox="0 0 100 100">
-					<path
-						className="fill-primary/5"
-						d={`${path} L100 100 L0 100 Z`}
-					/>
-					<path
-						className="fill-none stroke-primary stroke-2"
-						d={path}
-					/>
-				</svg>
-				<div className="absolute inset-x-4 bottom-2 flex justify-between font-label-md text-[10px] text-on-surface-variant">
-					<span>00:00</span>
-					<span>06:00</span>
-					<span>12:00</span>
-					<span>18:00</span>
-					<span>Now</span>
-				</div>
-			</div>
+			<div
+				className="h-48 w-full rounded-lg bg-surface-container-low"
+				ref={chartRef}
+			/>
 		</div>
 	);
 }
@@ -542,12 +739,45 @@ function VelocityPanel({
 	);
 }
 
-function AudienceOriginPanel() {
+function AudienceOriginPanel({ results }: { results: PollResults }) {
+	const regions = useMemo(
+		() =>
+			Object.entries(results.summary.regions ?? {})
+				.map(([region, count]) => ({ region, count }))
+				.filter((region) => region.count > 0)
+				.sort((left, right) => right.count - left.count)
+				.slice(0, 6),
+		[results.summary.regions]
+	);
+	const totalRegions = regions.reduce((total, region) => total + region.count, 0);
+	const chartOption = useMemo<EChartsOption>(
+		() => ({
+			color: ["#6750a4"],
+			grid: { bottom: 24, left: 28, right: 8, top: 12 },
+			tooltip: { trigger: "axis" },
+			xAxis: {
+				type: "category",
+				axisLabel: { interval: 0, overflow: "truncate", width: 72 },
+				data: regions.map((region) => region.region),
+			},
+			yAxis: { type: "value", minInterval: 1 },
+			series: [
+				{
+					type: "bar",
+					barMaxWidth: 36,
+					data: regions.map((region) => region.count),
+				},
+			],
+		}),
+		[regions]
+	);
+	const chartRef = useEChart(chartOption);
+
 	return (
 		<div className="space-y-md rounded-xl border border-outline-variant bg-surface-container-lowest p-md md:col-span-7">
 			<div className="flex items-center justify-between border-b border-outline-variant pb-xs">
 				<p className="font-label-md text-[10px] uppercase text-on-surface-variant">
-					Audience Origin
+					Live Audience Origin
 				</p>
 				<span className="material-symbols-outlined text-[16px] text-on-surface-variant">
 					public
@@ -555,24 +785,26 @@ function AudienceOriginPanel() {
 			</div>
 			<div className="flex flex-col items-center gap-lg md:flex-row">
 				<div className="w-full space-y-4 md:w-1/2">
-					<SplitBar
-						label="Known regions"
-						total={100}
-						value={0}
-					/>
-					<SplitBar
-						label="Anonymous traffic"
-						total={100}
-						value={100}
-					/>
+					{regions.length === 0 ? (
+						<p className="rounded-lg bg-surface-container p-md font-body-md text-on-surface-variant">
+							Waiting for live viewers to join this poll.
+						</p>
+					) : (
+						regions.map((region) => (
+							<SplitBar
+								key={region.region}
+								label={region.region}
+								total={totalRegions}
+								value={region.count}
+							/>
+						))
+					)}
 				</div>
 				<div className="flex min-h-[120px] w-full items-center justify-center rounded-lg bg-surface-container p-2 md:w-1/2">
-					<div className="relative flex aspect-video w-full items-center justify-center rounded bg-outline-variant/10 text-[10px] italic text-outline">
-						<span className="material-symbols-outlined scale-[3] opacity-20">map</span>
-						<div className="absolute inset-0 flex items-center justify-center">
-							Regional Density Overlay
-						</div>
-					</div>
+					<div
+						className="h-40 w-full"
+						ref={chartRef}
+					/>
 				</div>
 			</div>
 		</div>
@@ -580,6 +812,28 @@ function AudienceOriginPanel() {
 }
 
 function AudienceSegmentsPanel({ results }: { results: PollResults }) {
+	const chartOption = useMemo<EChartsOption>(
+		() => ({
+			color: ["#6750a4", "#625b71", "#b3261e"],
+			legend: { bottom: 0 },
+			tooltip: { trigger: "item" },
+			series: [
+				{
+					type: "pie",
+					radius: ["48%", "72%"],
+					center: ["50%", "42%"],
+					data: [
+						{ name: "Anonymous", value: results.summary.anonymousResponses },
+						{ name: "Authenticated", value: results.summary.authenticatedResponses },
+					],
+					label: { formatter: "{b}: {c}" },
+				},
+			],
+		}),
+		[results.summary.anonymousResponses, results.summary.authenticatedResponses]
+	);
+	const chartRef = useEChart(chartOption);
+
 	return (
 		<div className="space-y-md rounded-xl border border-outline-variant bg-surface-container p-md md:col-span-5">
 			<div className="flex items-center justify-between border-b border-outline-variant pb-xs">
@@ -590,6 +844,10 @@ function AudienceSegmentsPanel({ results }: { results: PollResults }) {
 					groups
 				</span>
 			</div>
+			<div
+				className="h-44 w-full"
+				ref={chartRef}
+			/>
 			<div className="space-y-3">
 				<SplitBar
 					label="Anonymous"
@@ -632,6 +890,29 @@ function QuestionResultCard({
 	question: PollResults["questions"][number];
 	questionIndex: number;
 }) {
+	const chartOption = useMemo<EChartsOption>(
+		() => ({
+			color: ["#6750a4"],
+			grid: { bottom: 24, left: 32, right: 12, top: 8 },
+			tooltip: { trigger: "axis" },
+			xAxis: {
+				type: "category",
+				axisLabel: { interval: 0, overflow: "truncate", width: 90 },
+				data: question.options.map((option) => option.optionText),
+			},
+			yAxis: { type: "value", minInterval: 1 },
+			series: [
+				{
+					type: "bar",
+					barMaxWidth: 42,
+					data: question.options.map((option) => option.selectionCount),
+				},
+			],
+		}),
+		[question.options]
+	);
+	const chartRef = useEChart(chartOption);
+
 	return (
 		<article className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
 			<div className="mb-lg flex flex-col justify-between gap-md md:flex-row md:items-start">
@@ -664,6 +945,11 @@ function QuestionResultCard({
 					</p>
 				</div>
 			</div>
+
+			<div
+				className="mb-lg h-56 w-full rounded-lg bg-surface-container-low"
+				ref={chartRef}
+			/>
 
 			<div className="space-y-md">
 				{question.options.map((option) => (

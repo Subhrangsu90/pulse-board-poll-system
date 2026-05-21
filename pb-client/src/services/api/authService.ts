@@ -12,6 +12,7 @@ const authRoutes = {
 	register: `${API_BASE_URL}/auth/register`,
 	logout: "/auth/logout",
 	currentUser: "/auth/current-user",
+	optionalCurrentUser: "/auth/optional-current-user",
 } as const;
 
 function getCurrentReturnTo() {
@@ -48,11 +49,7 @@ export const authService = {
 	},
 
 	async getOptionalCurrentUser() {
-		try {
-			return await apiGet<CurrentUser>(authRoutes.currentUser);
-		} catch {
-			return null;
-		}
+		return await apiGet<CurrentUser | null>(authRoutes.optionalCurrentUser);
 	},
 };
 

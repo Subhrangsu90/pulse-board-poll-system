@@ -10,6 +10,7 @@ export const authRouter: Router = express.Router();
 authRouter.get("/login", asyncHandler(controller.loginUser));
 authRouter.get("/register", asyncHandler(controller.registerUser));
 authRouter.get("/callback", asyncHandler(controller.handleCallback));
+authRouter.get("/optional-current-user", asyncHandler(controller.getOptionalCurrentUser));
 
 // Protected Route
 authRouter.get("/logout", requireAuth, asyncHandler(controller.logoutUser));

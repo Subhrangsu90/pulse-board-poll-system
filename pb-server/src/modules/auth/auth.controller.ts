@@ -83,6 +83,12 @@ const getCurrentUser = async (req: Request, res: Response) => {
 	}
 };
 
+const getOptionalCurrentUser = async (req: Request, res: Response) => {
+	const user = await authService.fetchCurrentUser(req).catch(() => null);
+
+	return ok(res, "Current user checked successfully", user);
+};
+
 const logoutUser = async (req: Request, res: Response) => {
 	await authService.revokeToken(req);
 	clearCookie(res, req, authService.AUTH_COOKIE_NAME);
@@ -91,4 +97,4 @@ const logoutUser = async (req: Request, res: Response) => {
 	return ok(res, "Logged out successfully");
 };
 
-export { loginUser, registerUser, handleCallback, logoutUser, getCurrentUser };
+export { loginUser, registerUser, handleCallback, logoutUser, getCurrentUser, getOptionalCurrentUser };

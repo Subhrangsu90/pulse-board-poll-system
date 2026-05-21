@@ -9,6 +9,7 @@ import { createPollBodySchema, updatePollBodySchema } from "./dto/polls.dto";
 import { questionSchema } from "./dto/questions.dto";
 import { submitPollResponseBodySchema } from "./dto/responses.dto";
 import * as pollService from "./poll.service";
+import { createDeviceFingerprint } from "./realtime/duplicate-vote.service";
 
 function getPollId(req: Request) {
 	const { pollId } = req.params;
@@ -87,6 +88,16 @@ const getPollById = async (req: Request, res: Response) => {
 	return ok(res, "Poll fetched successfully", poll);
 };
 
+const getPollResults = async (req: Request, res: Response) => {
+	if (!req.user?.id) {
+		throw unauthorized("Authentication required.");
+	}
+
+	const results = await pollService.getPollResults(getPollId(req), req.user.id);
+
+	return ok(res, "Poll results fetched successfully", results);
+};
+
 const getPublicPollBySlug = async (req: Request, res: Response) => {
 	const poll = await pollService.getPublicPollBySlug(getPublicSlug(req));
 
@@ -99,12 +110,21 @@ const submitPublicPollResponse = async (req: Request, res: Response) => {
 	const cookies = parseCookies(req);
 	const anonymousIdentifier = cookies[cookieName] ?? randomUUID();
 	const user = await fetchCurrentUser(req).catch(() => null);
+	const ipAddress = getRequestIp(req);
+	const deviceFingerprint = createDeviceFingerprint({
+		userId: user?.id ?? null,
+		anonymousIdentifier,
+		ipAddress,
+		userAgent: req.get("user-agent"),
+		deviceFingerprint: req.get("x-device-fingerprint"),
+	});
 
 	const response = await pollService.submitPublicPollResponse({
 		publicSlug,
 		userId: user?.id ?? null,
 		anonymousIdentifier,
-		ipAddress: getRequestIp(req),
+		ipAddress,
+		deviceFingerprint,
 		...parseSchema(submitPollResponseBodySchema, req.body),
 	});
 
@@ -113,6 +133,24 @@ const submitPublicPollResponse = async (req: Request, res: Response) => {
 	}
 
 	return created(res, "Response submitted successfully", response);
+};
+
+const getPublicPollLiveMetrics = async (req: Request, res: Response) => {
+	const metrics = await pollService.getPublicPollLiveMetrics(getPublicSlug(req));
+
+	return ok(res, "Live poll metrics fetched successfully", metrics);
+};
+
+const getPublicPollResults = async (req: Request, res: Response) => {
+	const results = await pollService.getPublicPollResultsBySlug(getPublicSlug(req));
+
+	return ok(res, "Public poll results fetched successfully", results);
+};
+
+const getVoteQueueHealth = async (_req: Request, res: Response) => {
+	const health = await pollService.getVoteQueueHealth();
+
+	return ok(res, "Vote queue is healthy", health);
 };
 
 const updatePoll = async (req: Request, res: Response) => {
@@ -205,6 +243,10 @@ export {
 	deletePoll,
 	getAllPolls,
 	getPollById,
+	getPollResults,
+	getPublicPollLiveMetrics,
+	getPublicPollResults,
+	getVoteQueueHealth,
 	getPublicPollBySlug,
 	publishPoll,
 	submitPublicPollResponse,

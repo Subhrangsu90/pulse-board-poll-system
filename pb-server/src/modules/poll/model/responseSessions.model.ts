@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
+import { index, pgTable, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 import { users } from "../../auth/model/user.model";
 import { polls } from "./polls.model";
 
@@ -15,6 +15,7 @@ export const responseSessions = pgTable(
 		createdAt: timestamp("created_at").defaultNow(),
 	},
 	(table) => [
+		index("response_sessions_poll_created_at_idx").on(table.pollId, table.createdAt),
 		uniqueIndex("response_sessions_poll_user_unique")
 			.on(table.pollId, table.userId)
 			.where(sql`${table.userId} is not null`),
