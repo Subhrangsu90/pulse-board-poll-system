@@ -1,5 +1,7 @@
 import express, { Request, Response } from "express";
 import cookieParser from "cookie-parser";
+import cors from "cors";
+
 import { ok } from "./common/utils/api.response";
 import { errorMiddleware } from "./common/middleware/error.middleware";
 import { notFound } from "./common/utils/api.error";
