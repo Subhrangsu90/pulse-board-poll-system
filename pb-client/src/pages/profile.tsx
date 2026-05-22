@@ -47,7 +47,7 @@ export default function Profile() {
 				<p className="font-sans text-label-lg text-primary">Profile</p>
 				<h2 className="font-serif text-headline-lg text-on-background">Creator profile</h2>
 				<p className="max-w-2xl font-sans text-body-lg text-on-surface-variant">
-					Your signed-in account and workspace activity in PulseBoard.
+					Your signed-in account and workspace activity in Votyx.
 				</p>
 			</div>
 

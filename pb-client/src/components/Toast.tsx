@@ -46,7 +46,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 	const dismissToast = useCallback((toastId: string) => {
 		setToasts((currentToasts) =>
-			currentToasts.filter((toast) => toast.id !== toastId)
+			currentToasts.filter((toast) => toast.id !== toastId),
 		);
 	}, []);
 
@@ -67,7 +67,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 			error: (message) => showToast(message, { tone: "error" }),
 			info: (message) => showToast(message, { tone: "info" }),
 		}),
-		[showToast]
+		[showToast],
 	);
 
 	return (
@@ -106,8 +106,8 @@ function ToastItem({
 
 	return (
 		<div
-			className={`pointer-events-auto flex items-start gap-sm rounded-lg border px-md py-sm font-body-md text-body-md shadow-popover ${getToastClassName(
-				toast.tone
+			className={`pointer-events-auto flex items-start gap-sm rounded-lg border px-md py-sm font-sans text-body-md shadow-popover ${getToastClassName(
+				toast.tone,
 			)}`}
 			role={toast.tone === "error" ? "alert" : "status"}>
 			<span className="material-symbols-outlined mt-0.5 text-[20px]">
@@ -119,7 +119,9 @@ function ToastItem({
 				className="rounded-full p-0.5 opacity-70 transition-opacity hover:opacity-100"
 				onClick={() => onDismiss(toast.id)}
 				type="button">
-				<span className="material-symbols-outlined text-[18px]">close</span>
+				<span className="material-symbols-outlined text-[18px]">
+					close
+				</span>
 			</button>
 		</div>
 	);

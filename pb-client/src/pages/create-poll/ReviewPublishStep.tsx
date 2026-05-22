@@ -27,9 +27,7 @@ function getExpiryLabel(requirements: PollRequirements) {
 
 function getPollLink(publicSlug: string | null, pollId: string | null) {
 	const origin =
-		typeof window === "undefined"
-			? "pulseboard.com"
-			: window.location.origin;
+		typeof window === "undefined" ? "votyx.com" : window.location.origin;
 	const slug = publicSlug || pollId;
 
 	return slug
@@ -76,14 +74,14 @@ export function ReviewPublishStep({
 			<div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
 				<div className="md:col-span-8 bg-surface-container rounded-xl p-lg border border-outline-variant">
 					<div className="flex items-center gap-sm mb-md">
-						<span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-md text-label-md">
+						<span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-sans text-label-md">
 							LIVE PREVIEW
 						</span>
-						<span className="text-outline font-label-md text-label-md">
+						<span className="text-outline font-sans text-label-md">
 							Ends {getExpiryLabel(requirements)}
 						</span>
 					</div>
-					<h2 className="font-title-lg text-title-lg text-on-surface mb-lg">
+					<h2 className="font-serif text-title-lg text-on-surface mb-lg">
 						{requirements.title}
 					</h2>
 
@@ -95,16 +93,16 @@ export function ReviewPublishStep({
 									key={question.id}>
 									<div className="mb-md flex flex-col gap-xs">
 										<div className="flex flex-wrap items-center gap-sm">
-											<span className="rounded-full bg-secondary-container px-3 py-1 font-label-md text-label-md text-on-secondary-container">
+											<span className="rounded-full bg-secondary-container px-3 py-1 font-sans text-label-md text-on-secondary-container">
 												Question {questionIndex + 1}
 											</span>
-											<span className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant">
+											<span className="rounded-full bg-surface-container-high px-3 py-1 font-sans text-label-md text-on-surface-variant">
 												{question.questionType ===
 												"multiple_choice"
 													? "Multiple choice"
 													: "Single choice"}
 											</span>
-											<span className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant">
+											<span className="rounded-full bg-surface-container-high px-3 py-1 font-sans text-label-md text-on-surface-variant">
 												{question.isRequired
 													? "Required"
 													: "Optional"}
@@ -121,7 +119,7 @@ export function ReviewPublishStep({
 												className="w-full text-left p-md rounded-xl bg-surface-container-lowest border border-outline-variant hover:border-primary hover:bg-surface-container-high transition-all group flex justify-between items-center"
 												key={option.id}
 												type="button">
-												<span className="font-body-lg text-body-lg text-on-surface">
+												<span className="font-sans text-body-lg text-on-surface">
 													{option.optionText}
 												</span>
 												<span className="material-symbols-outlined text-outline group-hover:text-primary">
@@ -136,7 +134,7 @@ export function ReviewPublishStep({
 								</section>
 							))
 						) : (
-							<p className="rounded-lg border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface-variant">
+							<p className="rounded-lg border border-outline-variant bg-surface-container-lowest p-md font-sans text-body-md text-on-surface-variant">
 								Add at least one question before publishing.
 							</p>
 						)}
@@ -146,13 +144,13 @@ export function ReviewPublishStep({
 							<span className="material-symbols-outlined text-secondary">
 								verified
 							</span>
-							<span className="font-label-lg text-label-lg text-secondary">
+							<span className="font-sans text-label-lg text-secondary">
 								{requirements.responseMode === "authenticated"
 									? "Verified Participants Only"
 									: "Anonymous Participants"}
 							</span>
 						</div>
-						<span className="font-label-lg text-label-lg text-outline">
+						<span className="font-sans text-label-lg text-outline">
 							0 Votes cast
 						</span>
 					</div>
@@ -160,7 +158,7 @@ export function ReviewPublishStep({
 
 				<div className="md:col-span-4 flex flex-col gap-gutter">
 					<div className="bg-surface-container-low rounded-xl p-md border border-outline-variant">
-						<h3 className="font-label-lg text-label-lg text-primary mb-md flex items-center gap-xs">
+						<h3 className="font-sans text-label-lg text-primary mb-md flex items-center gap-xs">
 							<span className="material-symbols-outlined text-[18px]">
 								settings
 							</span>
@@ -168,10 +166,10 @@ export function ReviewPublishStep({
 						</h3>
 						<ul className="space-y-sm">
 							<li className="flex justify-between items-center">
-								<span className="text-on-surface-variant font-label-md">
+								<span className="text-on-surface-variant font-sans">
 									Privacy
 								</span>
-								<span className="text-on-surface font-label-md font-bold">
+								<span className="text-on-surface font-sans font-bold">
 									{requirements.responseMode ===
 									"authenticated"
 										? "Authenticated"
@@ -179,28 +177,28 @@ export function ReviewPublishStep({
 								</span>
 							</li>
 							<li className="flex justify-between items-center">
-								<span className="text-on-surface-variant font-label-md">
+								<span className="text-on-surface-variant font-sans">
 									Questions
 								</span>
-								<span className="text-on-surface font-label-md font-bold">
+								<span className="text-on-surface font-sans font-bold">
 									{questions.length}
 								</span>
 							</li>
 							<li className="flex justify-between items-center gap-md">
-								<span className="text-on-surface-variant font-label-md">
+								<span className="text-on-surface-variant font-sans">
 									Slug
 								</span>
-								<span className="text-right text-on-surface font-label-md font-bold break-all">
+								<span className="text-right text-on-surface font-sans font-bold break-all">
 									{publicSlug ||
 										requirements.publicSlug ||
 										"Auto generated"}
 								</span>
 							</li>
 							<li className="flex justify-between items-center">
-								<span className="text-on-surface-variant font-label-md">
+								<span className="text-on-surface-variant font-sans">
 									Status
 								</span>
-								<span className="text-on-surface font-label-md font-bold">
+								<span className="text-on-surface font-sans font-bold">
 									Draft
 								</span>
 							</li>
@@ -209,7 +207,7 @@ export function ReviewPublishStep({
 							<div className="mt-md flex flex-wrap gap-xs">
 								{tags.map((tag) => (
 									<span
-										className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant"
+										className="rounded-full bg-surface-container-high px-3 py-1 font-sans text-label-md text-on-surface-variant"
 										key={tag}>
 										{tag}
 									</span>
@@ -225,10 +223,10 @@ export function ReviewPublishStep({
 							src="https://lh3.googleusercontent.com/aida-public/AB6AXuB96NjWiJJz3VSg57ZynVUEo60f5fUobVikJc3sQwqIqQOBF9_cVEdk-Veo4emPIBX43UAQM-WRfx6MhIRJY6FZzJ40nuAm41MNv2TFmVlulIZO03-GHC-jg_k8p-3CL_5SCCelgXBfaRpElkaAk57MKGxkPjxSWa57UHAcT1sbO66q2Ny7R--N_KRBJxhZ49mAK7ki7X6wvUKVBAnc8mgTzzPhfTW5YzSOg4JEEeFAqhr5pUxnGJ1Hy-CvV2lN5TIYKq3tMqiWtgEo"
 						/>
 						<div className="p-md">
-							<h4 className="font-title-lg text-title-lg text-primary text-[16px] leading-tight mb-xs">
+							<h4 className="font-serif text-title-lg text-primary text-[16px] leading-tight mb-xs">
 								Editorial Context
 							</h4>
-							<p className="font-body-md text-body-md text-on-surface-variant">
+							<p className="font-sans text-body-md text-on-surface-variant">
 								Your poll will be featured in the "Future of
 								Workspace" curated collection.
 							</p>
@@ -247,19 +245,19 @@ export function ReviewPublishStep({
 						</span>
 					</div>
 					<div className="flex-1">
-						<h2 className="font-title-lg text-title-lg mb-xs">
+						<h2 className="font-serif text-title-lg mb-xs">
 							Ready for the world
 						</h2>
-						<p className="font-body-md mb-lg">
+						<p className="font-sans mb-lg">
 							Your poll is staged and ready to be launched. Once
 							you hit publish, the link below will become active.
 						</p>
 						<div className="bg-surface/50 p-md rounded-lg flex items-center justify-between border border-primary-container/20">
-							<code className="font-label-lg text-primary break-all">
+							<code className="font-sans text-primary break-all">
 								{pollLink}
 							</code>
 							<button
-								className="flex items-center gap-xs bg-primary text-on-primary-container px-4 py-2 rounded-full font-label-md hover:bg-primary-container transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+								className="flex items-center gap-xs bg-primary text-on-primary-container px-4 py-2 rounded-full font-sans hover:bg-primary-container transition-colors disabled:cursor-not-allowed disabled:opacity-60"
 								disabled={!pollId}
 								onClick={() => void copyPollLink()}
 								type="button">
@@ -310,11 +308,11 @@ export function SuccessDialog({
 			tone="success"
 			description="Your poll is live. Share this link with your participants.">
 			<div className="flex flex-col gap-md rounded-lg border border-outline-variant bg-surface-container-low p-md md:flex-row md:items-center md:justify-between">
-				<code className="break-all font-label-lg text-primary">
+				<code className="break-all font-sans text-primary">
 					{pollLink}
 				</code>
 				<button
-					className="flex items-center justify-center gap-xs rounded-full bg-primary px-4 py-2 font-label-md text-on-primary-container transition-colors hover:bg-primary-container"
+					className="flex items-center justify-center gap-xs rounded-full bg-primary px-4 py-2 font-sans text-on-primary-container transition-colors hover:bg-primary-container"
 					onClick={onCopyLink}
 					type="button">
 					<span className="material-symbols-outlined text-[18px]">
@@ -324,7 +322,7 @@ export function SuccessDialog({
 				</button>
 			</div>
 			<button
-				className="mt-lg rounded-full bg-surface-container-low px-6 py-3 font-label-lg font-bold text-primary transition-colors hover:bg-surface-container-high"
+				className="mt-lg rounded-full bg-surface-container-low px-6 py-3 font-sans font-bold text-primary transition-colors hover:bg-surface-container-high"
 				onClick={onDone}
 				type="button">
 				Go to My Polls

@@ -1,8 +1,18 @@
 import { useNavigate } from "@tanstack/react-router";
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+	type FormEvent,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import { useToast } from "../../components/toastContext";
 import { getApiErrorMessage } from "../../services/api/apiService";
-import { pollService, type Poll, type UpdatePollPayload } from "../../services/api/pollService";
+import {
+	pollService,
+	type Poll,
+	type UpdatePollPayload,
+} from "../../services/api/pollService";
 
 export type PollListViewProps = {
 	title: string;
@@ -32,9 +42,12 @@ function getStatusLabel(status: Poll["status"]) {
 }
 
 function getStatusClass(status: Poll["status"]) {
-	if (status === "active") return "bg-primary-container text-on-primary-container";
-	if (status === "completed") return "bg-surface-variant text-on-surface-variant";
-	if (status === "expired") return "bg-error-container text-on-error-container";
+	if (status === "active")
+		return "bg-primary-container text-on-primary-container";
+	if (status === "completed")
+		return "bg-surface-variant text-on-surface-variant";
+	if (status === "expired")
+		return "bg-error-container text-on-error-container";
 	return "bg-tertiary-container text-on-tertiary-container";
 }
 
@@ -90,10 +103,13 @@ export function PollListView({
 	const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
 	const [editForm, setEditForm] = useState<EditForm | null>(null);
 
-	const showError = useCallback((message: string) => {
-		setError(message);
-		toast.error(message);
-	}, [toast]);
+	const showError = useCallback(
+		(message: string) => {
+			setError(message);
+			toast.error(message);
+		},
+		[toast],
+	);
 
 	const filteredPolls = useMemo(() => {
 		if (!statusFilter) return polls;
@@ -105,19 +121,24 @@ export function PollListView({
 
 		if (sortMode === "status" && showStatusSort) {
 			return nextPolls.sort((a, b) =>
-				getStatusLabel(a.status).localeCompare(getStatusLabel(b.status))
+				getStatusLabel(a.status).localeCompare(
+					getStatusLabel(b.status),
+				),
 			);
 		}
 
 		if (sortMode === "expiry") {
 			return nextPolls.sort(
-				(a, b) => new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime()
+				(a, b) =>
+					new Date(a.expiresAt).getTime() -
+					new Date(b.expiresAt).getTime(),
 			);
 		}
 
 		return nextPolls.sort(
 			(a, b) =>
-				new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+				new Date(b.createdAt ?? 0).getTime() -
+				new Date(a.createdAt ?? 0).getTime(),
 		);
 	}, [filteredPolls, showStatusSort, sortMode]);
 
@@ -144,7 +165,9 @@ export function PollListView({
 
 	const replacePoll = (poll: Poll) => {
 		setPolls((currentPolls) =>
-			currentPolls.map((currentPoll) => (currentPoll.id === poll.id ? poll : currentPoll))
+			currentPolls.map((currentPoll) =>
+				currentPoll.id === poll.id ? poll : currentPoll,
+			),
 		);
 	};
 
@@ -201,7 +224,9 @@ export function PollListView({
 			closeEditDialog();
 		} catch (updateError) {
 			console.error("Unable to update poll:", updateError);
-			showError(getApiErrorMessage(updateError, "Unable to update poll."));
+			showError(
+				getApiErrorMessage(updateError, "Unable to update poll."),
+			);
 		} finally {
 			setIsSaving(false);
 		}
@@ -217,8 +242,8 @@ export function PollListView({
 			showError(
 				getApiErrorMessage(
 					publishError,
-					"Unable to publish poll. Make sure it has questions and options."
-				)
+					"Unable to publish poll. Make sure it has questions and options.",
+				),
 			);
 		}
 	};
@@ -230,21 +255,30 @@ export function PollListView({
 			toast.success("Poll archived.");
 		} catch (archiveError) {
 			console.error("Unable to archive poll:", archiveError);
-			showError(getApiErrorMessage(archiveError, "Unable to archive poll."));
+			showError(
+				getApiErrorMessage(archiveError, "Unable to archive poll."),
+			);
 		}
 	};
 
 	const handleDeletePoll = async (poll: Poll) => {
-		if (!window.confirm(`Delete "${poll.title}"? This cannot be undone.`)) return;
+		if (!window.confirm(`Delete "${poll.title}"? This cannot be undone.`))
+			return;
 
 		setError(null);
 		try {
 			await pollService.deletePoll(poll.id);
-			setPolls((currentPolls) => currentPolls.filter((currentPoll) => currentPoll.id !== poll.id));
+			setPolls((currentPolls) =>
+				currentPolls.filter(
+					(currentPoll) => currentPoll.id !== poll.id,
+				),
+			);
 			toast.success("Poll deleted.");
 		} catch (deleteError) {
 			console.error("Unable to delete poll:", deleteError);
-			showError(getApiErrorMessage(deleteError, "Unable to delete poll."));
+			showError(
+				getApiErrorMessage(deleteError, "Unable to delete poll."),
+			);
 		}
 	};
 
@@ -253,42 +287,54 @@ export function PollListView({
 			<div className="flex-1 space-y-gutter pb-32 md:pb-0">
 				<header className="mb-xl flex flex-col justify-between gap-md md:flex-row md:items-end">
 					<div>
-						<h2 className="mb-xs font-headline-md text-headline-md font-Literata text-primary">
+						<h2 className="mb-xs font-serif text-headline-md font-Literata text-primary">
 							{title}
 						</h2>
-						<p className="font-body-md text-on-surface-variant">{description}</p>
+						<p className="font-sans text-on-surface-variant">
+							{description}
+						</p>
 					</div>
 					<div className="flex items-center gap-sm">
-						<span className="font-label-md text-on-surface-variant">Sort by:</span>
+						<span className="font-sans text-on-surface-variant">
+							Sort by:
+						</span>
 						<select
-							className="rounded-lg border-none bg-surface-container-low font-label-md text-primary focus:ring-primary"
-							onChange={(event) => setSortMode(event.target.value as SortMode)}
+							className="rounded-lg border-none bg-surface-container-low font-sans text-primary focus:ring-primary"
+							onChange={(event) =>
+								setSortMode(event.target.value as SortMode)
+							}
 							value={sortMode}>
 							<option value="recent">Recent</option>
 							<option value="expiry">Expiry</option>
-							{showStatusSort ? <option value="status">Status</option> : null}
+							{showStatusSort ? (
+								<option value="status">Status</option>
+							) : null}
 						</select>
 					</div>
 				</header>
 
 				{error ? (
-					<p className="rounded-md bg-error-container px-md py-sm font-body-md text-on-error-container">
+					<p className="rounded-md bg-error-container px-md py-sm font-sans text-on-error-container">
 						{error}
 					</p>
 				) : null}
 
 				{isLoading ? (
-					<p className="rounded-xl border border-outline-variant bg-surface-container p-xl font-body-md text-on-surface-variant">
+					<p className="rounded-xl border border-outline-variant bg-surface-container p-xl font-sans text-on-surface-variant">
 						Loading polls...
 					</p>
 				) : null}
 
 				{!isLoading && sortedPolls.length === 0 ? (
 					<div className="rounded-xl border border-outline-variant bg-surface-container p-xl text-center">
-						<h3 className="mb-sm font-title-lg text-title-lg text-primary">{emptyTitle}</h3>
-						<p className="mb-lg font-body-md text-on-surface-variant">{emptyDescription}</p>
+						<h3 className="mb-sm font-serif text-title-lg text-primary">
+							{emptyTitle}
+						</h3>
+						<p className="mb-lg font-sans text-on-surface-variant">
+							{emptyDescription}
+						</p>
 						<button
-							className="rounded-full bg-primary-container px-xl py-3 font-label-lg font-bold text-on-primary-container"
+							className="rounded-full bg-primary-container px-xl py-3 font-sans font-bold text-on-primary-container"
 							onClick={() => void navigate({ to: "/create" })}
 							type="button">
 							Create Poll
@@ -302,7 +348,8 @@ export function PollListView({
 							className="flex flex-col rounded-xl border border-outline-variant bg-surface-container p-md transition-colors hover:bg-surface-container-high"
 							key={poll.id}>
 							<div className="mb-md flex items-start justify-between gap-md">
-								<span className={`rounded-full px-3 py-1 font-label-md ${getStatusClass(poll.status)}`}>
+								<span
+									className={`rounded-full px-3 py-1 font-sans ${getStatusClass(poll.status)}`}>
 									{getStatusLabel(poll.status)}
 								</span>
 								<button
@@ -310,20 +357,29 @@ export function PollListView({
 									onClick={() => void handleDeletePoll(poll)}
 									title="Delete poll"
 									type="button">
-									<span className="material-symbols-outlined">delete</span>
+									<span className="material-symbols-outlined">
+										delete
+									</span>
 								</button>
 							</div>
 
-							<h3 className="mb-sm font-title-lg text-title-lg font-Literata leading-tight text-primary">
+							<h3 className="mb-sm font-serif text-title-lg font-Literata leading-tight text-primary">
 								{poll.title}
 							</h3>
-							<p className="mb-md line-clamp-2 font-body-md text-on-surface-variant">
+							<p className="mb-md line-clamp-2 font-sans text-on-surface-variant">
 								{poll.description || "No description added."}
 							</p>
 
-							<div className="mb-lg space-y-xs font-label-md text-on-surface-variant">
-								<p>Expires {new Date(poll.expiresAt).toLocaleString()}</p>
-								<p>{poll.responseMode === "authenticated" ? "Authenticated" : "Anonymous"}</p>
+							<div className="mb-lg space-y-xs font-sans text-on-surface-variant">
+								<p>
+									Expires{" "}
+									{new Date(poll.expiresAt).toLocaleString()}
+								</p>
+								<p>
+									{poll.responseMode === "authenticated"
+										? "Authenticated"
+										: "Anonymous"}
+								</p>
 								{poll.tags.length > 0 ? (
 									<div className="flex flex-wrap gap-xs pt-xs">
 										{poll.tags.map((tag) => (
@@ -341,24 +397,32 @@ export function PollListView({
 								{poll.status === "draft" ? (
 									<>
 										<button
-											className="flex items-center gap-xs rounded-full bg-primary-container px-4 py-2 font-label-lg text-on-primary-container"
+											className="flex items-center gap-xs rounded-full bg-primary-container px-4 py-2 font-sans text-on-primary-container"
 											onClick={() => openFullEditor(poll)}
 											type="button">
-											<span className="material-symbols-outlined text-[18px]">edit</span>
+											<span className="material-symbols-outlined text-[18px]">
+												edit
+											</span>
 											Edit
 										</button>
 										<button
-											className="flex items-center gap-xs rounded-full bg-surface-container-lowest px-4 py-2 font-label-lg text-primary"
+											className="flex items-center gap-xs rounded-full bg-surface-container-lowest px-4 py-2 font-sans text-primary"
 											onClick={() => openEditDialog(poll)}
 											type="button">
-											<span className="material-symbols-outlined text-[18px]">settings</span>
+											<span className="material-symbols-outlined text-[18px]">
+												settings
+											</span>
 											Settings
 										</button>
 										<button
-											className="flex items-center gap-xs rounded-full bg-surface-container-lowest px-4 py-2 font-label-lg text-primary"
-											onClick={() => void handlePublishPoll(poll)}
+											className="flex items-center gap-xs rounded-full bg-surface-container-lowest px-4 py-2 font-sans text-primary"
+											onClick={() =>
+												void handlePublishPoll(poll)
+											}
 											type="button">
-											<span className="material-symbols-outlined text-[18px]">publish</span>
+											<span className="material-symbols-outlined text-[18px]">
+												publish
+											</span>
 											Publish
 										</button>
 									</>
@@ -367,54 +431,72 @@ export function PollListView({
 								{poll.status === "active" ? (
 									<>
 										<button
-											className="flex items-center gap-xs rounded-full bg-primary-container px-4 py-2 font-label-lg text-on-primary-container"
-											onClick={() => void copyPollLink(poll)}
+											className="flex items-center gap-xs rounded-full bg-primary-container px-4 py-2 font-sans text-on-primary-container"
+											onClick={() =>
+												void copyPollLink(poll)
+											}
 											type="button">
-											<span className="material-symbols-outlined text-[18px]">share</span>
+											<span className="material-symbols-outlined text-[18px]">
+												share
+											</span>
 											Link
 										</button>
 										<button
-											className="flex items-center gap-xs rounded-full bg-surface-container-lowest px-4 py-2 font-label-lg text-primary"
+											className="flex items-center gap-xs rounded-full bg-surface-container-lowest px-4 py-2 font-sans text-primary"
 											onClick={() => openResults(poll)}
 											type="button">
-											<span className="material-symbols-outlined text-[18px]">analytics</span>
+											<span className="material-symbols-outlined text-[18px]">
+												analytics
+											</span>
 											Results
 										</button>
 										<button
-											className="flex items-center gap-xs rounded-full bg-surface-container-lowest px-4 py-2 font-label-lg text-primary"
-											onClick={() => void handleArchivePoll(poll)}
+											className="flex items-center gap-xs rounded-full bg-surface-container-lowest px-4 py-2 font-sans text-primary"
+											onClick={() =>
+												void handleArchivePoll(poll)
+											}
 											type="button">
-											<span className="material-symbols-outlined text-[18px]">archive</span>
+											<span className="material-symbols-outlined text-[18px]">
+												archive
+											</span>
 											Archive
 										</button>
 									</>
 								) : null}
 
-								{poll.status === "completed" || poll.status === "expired" ? (
+								{poll.status === "completed" ||
+								poll.status === "expired" ? (
 									<>
 										<button
-											className="flex items-center gap-xs rounded-full bg-primary-container px-4 py-2 font-label-lg text-on-primary-container"
+											className="flex items-center gap-xs rounded-full bg-primary-container px-4 py-2 font-sans text-on-primary-container"
 											onClick={() => openResults(poll)}
 											type="button">
-											<span className="material-symbols-outlined text-[18px]">visibility</span>
+											<span className="material-symbols-outlined text-[18px]">
+												visibility
+											</span>
 											Results
 										</button>
 										<button
-											className="flex items-center gap-xs rounded-full bg-surface-container-lowest px-4 py-2 font-label-lg text-primary"
+											className="flex items-center gap-xs rounded-full bg-surface-container-lowest px-4 py-2 font-sans text-primary"
 											onClick={() => downloadPoll(poll)}
 											type="button">
-											<span className="material-symbols-outlined text-[18px]">download</span>
+											<span className="material-symbols-outlined text-[18px]">
+												download
+											</span>
 											Download
 										</button>
 									</>
 								) : null}
 
-								{poll.status !== "completed" && poll.status !== "expired" ? (
+								{poll.status !== "completed" &&
+								poll.status !== "expired" ? (
 									<button
-										className="flex items-center gap-xs rounded-full bg-surface-container-lowest px-4 py-2 font-label-lg text-primary"
+										className="flex items-center gap-xs rounded-full bg-surface-container-lowest px-4 py-2 font-sans text-primary"
 										onClick={() => downloadPoll(poll)}
 										type="button">
-										<span className="material-symbols-outlined text-[18px]">download</span>
+										<span className="material-symbols-outlined text-[18px]">
+											download
+										</span>
 										Export
 									</button>
 								) : null}
@@ -426,8 +508,12 @@ export function PollListView({
 						className="flex min-h-64 flex-col items-center justify-center rounded-xl bg-primary p-xl text-center text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
 						onClick={() => void navigate({ to: "/create" })}
 						type="button">
-						<span className="material-symbols-outlined mb-md text-[48px]">add</span>
-						<span className="font-headline-md text-headline-md font-Literata">New Poll</span>
+						<span className="material-symbols-outlined mb-md text-[48px]">
+							add
+						</span>
+						<span className="font-serif text-headline-md font-Literata">
+							New Poll
+						</span>
 					</button>
 				</div>
 			</div>
@@ -436,7 +522,9 @@ export function PollListView({
 				className="fixed bottom-24 right-margin z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container text-on-primary-container shadow-lg transition-all hover:scale-105 active:scale-95 md:right-xl"
 				onClick={() => void navigate({ to: "/create" })}
 				type="button">
-				<span className="material-symbols-outlined text-[32px]">add</span>
+				<span className="material-symbols-outlined text-[32px]">
+					add
+				</span>
 			</button>
 
 			{editingPoll && editForm ? (
@@ -446,9 +534,12 @@ export function PollListView({
 						onSubmit={handleUpdatePoll}>
 						<div className="mb-lg flex items-start justify-between gap-md">
 							<div>
-								<h3 className="font-title-lg text-title-lg text-primary">Edit Poll</h3>
-								<p className="font-body-md text-on-surface-variant">
-									Update poll details without changing questions.
+								<h3 className="font-serif text-title-lg text-primary">
+									Edit Poll
+								</h3>
+								<p className="font-sans text-on-surface-variant">
+									Update poll details without changing
+									questions.
 								</p>
 							</div>
 							<button
@@ -456,72 +547,92 @@ export function PollListView({
 								className="rounded-full p-xs text-outline hover:bg-surface-container-high hover:text-primary"
 								onClick={closeEditDialog}
 								type="button">
-								<span className="material-symbols-outlined">close</span>
+								<span className="material-symbols-outlined">
+									close
+								</span>
 							</button>
 						</div>
 
 						<div className="grid grid-cols-1 gap-md md:grid-cols-2">
-							<label className="flex flex-col gap-xs font-label-lg text-primary md:col-span-2">
+							<label className="flex flex-col gap-xs font-sans text-primary md:col-span-2">
 								Title
 								<input
-									className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-on-surface"
+									className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-sans text-on-surface"
 									onChange={(event) =>
-										setEditForm({ ...editForm, title: event.target.value })
+										setEditForm({
+											...editForm,
+											title: event.target.value,
+										})
 									}
 									value={editForm.title}
 								/>
 							</label>
-							<label className="flex flex-col gap-xs font-label-lg text-primary md:col-span-2">
+							<label className="flex flex-col gap-xs font-sans text-primary md:col-span-2">
 								Description
 								<textarea
-									className="min-h-24 rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-on-surface"
+									className="min-h-24 rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-sans text-on-surface"
 									onChange={(event) =>
-										setEditForm({ ...editForm, description: event.target.value })
+										setEditForm({
+											...editForm,
+											description: event.target.value,
+										})
 									}
 									value={editForm.description}
 								/>
 							</label>
-							<label className="flex flex-col gap-xs font-label-lg text-primary">
+							<label className="flex flex-col gap-xs font-sans text-primary">
 								Tags
 								<input
-									className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-on-surface"
+									className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-sans text-on-surface"
 									onChange={(event) =>
-										setEditForm({ ...editForm, tags: event.target.value })
+										setEditForm({
+											...editForm,
+											tags: event.target.value,
+										})
 									}
 									value={editForm.tags}
 								/>
 							</label>
-							<label className="flex flex-col gap-xs font-label-lg text-primary">
+							<label className="flex flex-col gap-xs font-sans text-primary">
 								Public Slug
 								<input
-									className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-on-surface"
+									className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-sans text-on-surface"
 									onChange={(event) =>
-										setEditForm({ ...editForm, publicSlug: event.target.value })
+										setEditForm({
+											...editForm,
+											publicSlug: event.target.value,
+										})
 									}
 									value={editForm.publicSlug}
 								/>
 							</label>
-							<label className="flex flex-col gap-xs font-label-lg text-primary">
+							<label className="flex flex-col gap-xs font-sans text-primary">
 								Response Mode
 								<select
-									className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-on-surface"
+									className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-sans text-on-surface"
 									onChange={(event) =>
 										setEditForm({
 											...editForm,
-											responseMode: event.target.value as EditForm["responseMode"],
+											responseMode: event.target
+												.value as EditForm["responseMode"],
 										})
 									}
 									value={editForm.responseMode}>
 									<option value="anonymous">Anonymous</option>
-									<option value="authenticated">Authenticated</option>
+									<option value="authenticated">
+										Authenticated
+									</option>
 								</select>
 							</label>
-							<label className="flex flex-col gap-xs font-label-lg text-primary">
+							<label className="flex flex-col gap-xs font-sans text-primary">
 								Expires At
 								<input
-									className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-on-surface"
+									className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-sans text-on-surface"
 									onChange={(event) =>
-										setEditForm({ ...editForm, expiresAt: event.target.value })
+										setEditForm({
+											...editForm,
+											expiresAt: event.target.value,
+										})
 									}
 									type="datetime-local"
 									value={editForm.expiresAt}
@@ -531,13 +642,13 @@ export function PollListView({
 
 						<div className="mt-lg flex flex-col gap-md md:flex-row md:justify-end">
 							<button
-								className="rounded-full bg-surface-container-low px-6 py-3 font-label-lg font-bold text-primary"
+								className="rounded-full bg-surface-container-low px-6 py-3 font-sans font-bold text-primary"
 								onClick={closeEditDialog}
 								type="button">
 								Cancel
 							</button>
 							<button
-								className="rounded-full bg-primary-container px-6 py-3 font-label-lg font-bold text-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
+								className="rounded-full bg-primary-container px-6 py-3 font-sans font-bold text-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
 								disabled={isSaving}
 								type="submit">
 								{isSaving ? "Saving..." : "Save Changes"}

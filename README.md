@@ -1,4 +1,4 @@
-# Pulse Board Poll System
+# Votyx Poll System
 
 A real-time polling and voting system built with modern web technologies. This monorepo contains both the client and server components for a dynamic poll management platform.
 

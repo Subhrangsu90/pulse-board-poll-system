@@ -54,7 +54,7 @@ export function Dialog({
 					<div className="min-w-0 flex flex-col items-center flex-1">
 						<div className="mb-xs flex items-start justify-between gap-md ">
 							<h2
-								className="font-title-lg text-title-lg text-primary"
+								className="font-serif text-title-lg text-primary"
 								id="dialog-title">
 								{title}
 							</h2>
@@ -72,7 +72,7 @@ export function Dialog({
 						</div>
 
 						{description ? (
-							<div className="mb-lg text-center font-body-md leading-relaxed text-on-surface-variant">
+							<div className="mb-lg text-center font-sans leading-relaxed text-on-surface-variant">
 								{description}
 							</div>
 						) : null}

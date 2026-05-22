@@ -3,7 +3,7 @@ import { defaultAppearance, type AppearancePreferences } from "./theme";
 
 export type WorkspacePreferences = UserPreferences & AppearancePreferences;
 
-const STORAGE_KEY = "pulseboard.workspace-preferences";
+const STORAGE_KEY = "votyx.workspace-preferences";
 
 const defaultPreferences: WorkspacePreferences = {
 	defaultResponseMode: "anonymous",

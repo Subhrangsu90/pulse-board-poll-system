@@ -13,7 +13,11 @@ import { PollRequirementsStep } from "./create-poll/PollRequirementsStep";
 import { QuestionsConfigurationStep } from "./create-poll/QuestionsConfigurationStep";
 import { ReviewPublishStep } from "./create-poll/ReviewPublishStep";
 import { createPollSteps } from "./create-poll/steps";
-import type { PollRequirements, SavedQuestion, StepId } from "./create-poll/types";
+import type {
+	PollRequirements,
+	SavedQuestion,
+	StepId,
+} from "./create-poll/types";
 
 function getDefaultDateTime() {
 	const date = new Date();
@@ -47,7 +51,9 @@ export default function CreatePoll() {
 	const editPollId = getEditPollIdFromPath();
 	const isEditMode = Boolean(editPollId);
 	const [currentStep, setCurrentStep] = useState<StepId>(1);
-	const [createdPollId, setCreatedPollId] = useState<string | null>(editPollId);
+	const [createdPollId, setCreatedPollId] = useState<string | null>(
+		editPollId,
+	);
 	const [createdPollSlug, setCreatedPollSlug] = useState<string | null>(null);
 	const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
 	const [questions, setQuestions] = useState<SavedQuestion[]>([]);
@@ -70,20 +76,27 @@ export default function CreatePoll() {
 
 	const expiresAt = useMemo(() => {
 		if (!requirements.expiresDate || !requirements.expiresTime) return null;
-		return new Date(`${requirements.expiresDate}T${requirements.expiresTime}`);
+		return new Date(
+			`${requirements.expiresDate}T${requirements.expiresTime}`,
+		);
 	}, [requirements.expiresDate, requirements.expiresTime]);
 
-	const updateRequirements = (nextRequirements: Partial<PollRequirements>) => {
+	const updateRequirements = (
+		nextRequirements: Partial<PollRequirements>,
+	) => {
 		setRequirements((currentRequirements) => ({
 			...currentRequirements,
 			...nextRequirements,
 		}));
 	};
 
-	const showError = useCallback((message: string) => {
-		setError(message);
-		toast.error(message);
-	}, [toast]);
+	const showError = useCallback(
+		(message: string) => {
+			setError(message);
+			toast.error(message);
+		},
+		[toast],
+	);
 
 	const validateRequirements = () => {
 		setError(null);
@@ -130,7 +143,7 @@ export default function CreatePoll() {
 					id: option.id,
 					optionText: option.optionText,
 				})),
-			}))
+			})),
 		);
 	};
 
@@ -142,7 +155,12 @@ export default function CreatePoll() {
 				hydrateEditPoll(await pollService.getPollById(editPollId));
 			} catch (loadError) {
 				console.error("Unable to load poll for editing:", loadError);
-				showError(getApiErrorMessage(loadError, "Unable to load poll for editing."));
+				showError(
+					getApiErrorMessage(
+						loadError,
+						"Unable to load poll for editing.",
+					),
+				);
 			} finally {
 				setIsLoadingEditPoll(false);
 			}
@@ -176,8 +194,8 @@ export default function CreatePoll() {
 			showError(
 				getApiErrorMessage(
 					submitError,
-					"Unable to save poll requirements. Please try again."
-				)
+					"Unable to save poll requirements. Please try again.",
+				),
 			);
 			return null;
 		} finally {
@@ -215,8 +233,8 @@ export default function CreatePoll() {
 			showError(
 				getApiErrorMessage(
 					submitError,
-					"Unable to save poll requirements. Please try again."
-				)
+					"Unable to save poll requirements. Please try again.",
+				),
 			);
 			return null;
 		} finally {
@@ -242,7 +260,10 @@ export default function CreatePoll() {
 		}
 	};
 
-	const handleUpdateQuestion = async (questionId: string, question: AddQuestionPayload) => {
+	const handleUpdateQuestion = async (
+		questionId: string,
+		question: AddQuestionPayload,
+	) => {
 		setIsSubmitting(true);
 		setError(null);
 
@@ -261,15 +282,19 @@ export default function CreatePoll() {
 						? {
 								id: savedQuestion.id,
 								questionText: savedQuestion.questionText,
-								questionType: savedQuestion.questionType ?? "single_choice",
+								questionType:
+									savedQuestion.questionType ??
+									"single_choice",
 								isRequired: savedQuestion.isRequired ?? true,
-								options: savedQuestion.options.map((option) => ({
-									id: option.id,
-									optionText: option.optionText,
-								})),
+								options: savedQuestion.options.map(
+									(option) => ({
+										id: option.id,
+										optionText: option.optionText,
+									}),
+								),
 							}
-						: currentQuestion
-				)
+						: currentQuestion,
+				),
 			);
 
 			return true;
@@ -278,8 +303,8 @@ export default function CreatePoll() {
 			showError(
 				getApiErrorMessage(
 					submitError,
-					"Unable to update question. Please try again."
-				)
+					"Unable to update question. Please try again.",
+				),
 			);
 			return false;
 		} finally {
@@ -296,15 +321,17 @@ export default function CreatePoll() {
 		try {
 			await pollService.deleteQuestion(questionId);
 			setQuestions((currentQuestions) =>
-				currentQuestions.filter((question) => question.id !== questionId)
+				currentQuestions.filter(
+					(question) => question.id !== questionId,
+				),
 			);
 		} catch (submitError) {
 			console.error("Unable to delete question:", submitError);
 			showError(
 				getApiErrorMessage(
 					submitError,
-					"Unable to delete question. Please try again."
-				)
+					"Unable to delete question. Please try again.",
+				),
 			);
 		} finally {
 			setIsSubmitting(false);
@@ -348,8 +375,8 @@ export default function CreatePoll() {
 			showError(
 				getApiErrorMessage(
 					submitError,
-					"Unable to save question. Please try again."
-				)
+					"Unable to save question. Please try again.",
+				),
 			);
 			return false;
 		} finally {
@@ -375,8 +402,8 @@ export default function CreatePoll() {
 			showError(
 				getApiErrorMessage(
 					submitError,
-					"Unable to publish poll. Check questions and options, then try again."
-				)
+					"Unable to publish poll. Check questions and options, then try again.",
+				),
 			);
 		} finally {
 			setIsSubmitting(false);
@@ -384,7 +411,9 @@ export default function CreatePoll() {
 	};
 
 	const handleSaveDraft = async () => {
-		const pollId = isEditMode ? await savePollRequirements() : await createDraftPoll();
+		const pollId = isEditMode
+			? await savePollRequirements()
+			: await createDraftPoll();
 		if (pollId) {
 			await navigate({ to: "/drafts" });
 		}
@@ -396,11 +425,14 @@ export default function CreatePoll() {
 				<div className="mb-sm flex items-center gap-2">
 					<CreatePollStepper currentStep={currentStep} />
 					<span className="font-sans text-label-md uppercase tracking-wider text-primary">
-						Step {currentStep} of {createPollSteps.length}: {activeStep.label}
+						Step {currentStep} of {createPollSteps.length}:{" "}
+						{activeStep.label}
 					</span>
 				</div>
 				<h2 className="font-serif text-display-lg text-on-surface mb-xs">
-					{isEditMode ? `Edit poll: ${activeStep.title}` : activeStep.title}
+					{isEditMode
+						? `Edit poll: ${activeStep.title}`
+						: activeStep.title}
 				</h2>
 				<p className="font-sans text-body-lg text-on-surface-variant">
 					{activeStep.description}
@@ -408,87 +440,97 @@ export default function CreatePoll() {
 			</header>
 
 			{isLoadingEditPoll ? (
-				<p className="rounded-xl border border-outline-variant bg-surface-container p-xl font-body-md text-on-surface-variant">
+				<p className="rounded-xl border border-outline-variant bg-surface-container p-xl font-sans text-on-surface-variant">
 					Loading poll editor...
 				</p>
 			) : (
-			<div className="space-y-lg">
-				{currentStep === 1 ? (
-					<PollRequirementsStep
-						onChange={updateRequirements}
-						requirements={requirements}
-					/>
-				) : null}
-
-				{currentStep === 2 ? (
-					<QuestionsConfigurationStep
-						isSubmitting={isSubmitting}
-						onAddQuestion={handleAddQuestion}
-						onDeleteQuestion={handleDeleteQuestion}
-						onUpdateQuestion={handleUpdateQuestion}
-						pollId={createdPollId}
-						questions={questions}
-					/>
-				) : null}
-
-				{currentStep === 3 ? (
-					<ReviewPublishStep
-						isPublishDialogOpen={isPublishDialogOpen}
-						onClosePublishDialog={() => setIsPublishDialogOpen(false)}
-						onFinishPublish={() => void navigate({ to: "/polls" })}
-						pollId={createdPollId}
-						publicSlug={createdPollSlug}
-						questions={questions}
-						requirements={requirements}
-					/>
-				) : null}
-
-				{error ? (
-					<p className="rounded-md bg-error-container px-md py-sm font-sans text-body-md text-on-error-container">
-						{error}
-					</p>
-				) : null}
-
-				<div className="flex flex-col items-center gap-md pt-xl md:flex-row">
-					{currentStep > 1 ? (
-						<button
-							className="w-full rounded-full bg-surface-container-low px-10 py-4 font-sans text-label-lg font-bold text-primary transition-all hover:bg-surface-container-high md:w-auto"
-							onClick={() => {
-								setIsPublishDialogOpen(false);
-								setCurrentStep((currentStep - 1) as StepId);
-							}}
-							type="button">
-							Back
-						</button>
+				<div className="space-y-lg">
+					{currentStep === 1 ? (
+						<PollRequirementsStep
+							onChange={updateRequirements}
+							requirements={requirements}
+						/>
 					) : null}
 
-					{currentStep < 3 ? (
-						<button
-							className="w-full rounded-full bg-primary-container px-10 py-4 font-sans text-label-lg font-bold text-on-primary-container transition-all hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
-							disabled={isSubmitting}
-							onClick={() => void handleContinue()}
-							type="button">
-							{isSubmitting ? "Saving..." : "Continue"}
-						</button>
-					) : (
-						<button
-							className="w-full rounded-full bg-primary-container px-10 py-4 font-sans text-label-lg font-bold text-on-primary-container transition-all hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
-							disabled={isSubmitting}
-							onClick={() => void handlePublishPoll()}
-							type="button">
-							{isSubmitting ? "Publishing..." : "Publish Poll"}
-						</button>
-					)}
+					{currentStep === 2 ? (
+						<QuestionsConfigurationStep
+							isSubmitting={isSubmitting}
+							onAddQuestion={handleAddQuestion}
+							onDeleteQuestion={handleDeleteQuestion}
+							onUpdateQuestion={handleUpdateQuestion}
+							pollId={createdPollId}
+							questions={questions}
+						/>
+					) : null}
 
-					<button
-						className="w-full rounded-full bg-surface-container-low px-10 py-4 font-sans text-label-lg font-bold text-primary transition-all hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
-						disabled={isSubmitting}
-						onClick={() => void handleSaveDraft()}
-						type="button">
-						{isSubmitting ? "Saving..." : isEditMode ? "Save Changes" : "Save as Draft"}
-					</button>
+					{currentStep === 3 ? (
+						<ReviewPublishStep
+							isPublishDialogOpen={isPublishDialogOpen}
+							onClosePublishDialog={() =>
+								setIsPublishDialogOpen(false)
+							}
+							onFinishPublish={() =>
+								void navigate({ to: "/polls" })
+							}
+							pollId={createdPollId}
+							publicSlug={createdPollSlug}
+							questions={questions}
+							requirements={requirements}
+						/>
+					) : null}
+
+					{error ? (
+						<p className="rounded-md bg-error-container px-md py-sm font-sans text-body-md text-on-error-container">
+							{error}
+						</p>
+					) : null}
+
+					<div className="flex flex-col items-center gap-md pt-xl md:flex-row">
+						{currentStep > 1 ? (
+							<button
+								className="w-full rounded-full bg-surface-container-low px-10 py-4 font-sans text-label-lg font-bold text-primary transition-all hover:bg-surface-container-high md:w-auto"
+								onClick={() => {
+									setIsPublishDialogOpen(false);
+									setCurrentStep((currentStep - 1) as StepId);
+								}}
+								type="button">
+								Back
+							</button>
+						) : null}
+
+						{currentStep < 3 ? (
+							<button
+								className="w-full rounded-full bg-primary-container px-10 py-4 font-sans text-label-lg font-bold text-on-primary-container transition-all hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+								disabled={isSubmitting}
+								onClick={() => void handleContinue()}
+								type="button">
+								{isSubmitting ? "Saving..." : "Continue"}
+							</button>
+						) : (
+							<button
+								className="w-full rounded-full bg-primary-container px-10 py-4 font-sans text-label-lg font-bold text-on-primary-container transition-all hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+								disabled={isSubmitting}
+								onClick={() => void handlePublishPoll()}
+								type="button">
+								{isSubmitting
+									? "Publishing..."
+									: "Publish Poll"}
+							</button>
+						)}
+
+						<button
+							className="w-full rounded-full bg-surface-container-low px-10 py-4 font-sans text-label-lg font-bold text-primary transition-all hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+							disabled={isSubmitting}
+							onClick={() => void handleSaveDraft()}
+							type="button">
+							{isSubmitting
+								? "Saving..."
+								: isEditMode
+									? "Save Changes"
+									: "Save as Draft"}
+						</button>
+					</div>
 				</div>
-			</div>
 			)}
 		</div>
 	);

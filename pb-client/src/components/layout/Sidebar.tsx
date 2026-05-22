@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { authService, type CurrentUser } from "../../services/api/authService";
 import { primaryNavigation } from "./navigation";
+import { BrandLogo } from "../BrandLogo";
 
 type SidebarProps = {
 	user: CurrentUser | null;
@@ -34,9 +35,16 @@ export function Sidebar({ user, isExpanded, onToggleExpanded }: SidebarProps) {
 							aria-expanded={isExpanded}
 							title="Expand sidebar"
 							className="grid size-10 shrink-0 place-items-center rounded-full text-primary transition-colors hover:bg-surface-container-high">
-							<span className="material-symbols-outlined">
-								{isBrandHovered ? "left_panel_open" : "hub"}
-							</span>
+							{isBrandHovered ? (
+								<span className="material-symbols-outlined">
+									left_panel_open
+								</span>
+							) : (
+								<BrandLogo
+									className="h-6 w-6"
+									showText={false}
+								/>
+							)}
 						</button>
 					)}
 
@@ -44,12 +52,14 @@ export function Sidebar({ user, isExpanded, onToggleExpanded }: SidebarProps) {
 					{isExpanded && (
 						<>
 							<div
-								aria-label="PulseBoard"
-								className="grid size-10 place-items-center text-primary"
-								title="PulseBoard">
-								<span className="material-symbols-outlined">
-									hub
-								</span>
+								aria-label="Votyx"
+								className="flex h-10 items-center text-primary"
+								title="Votyx">
+								<BrandLogo
+									showText={false}
+									className="h-6 w-6"
+									textClassName="font-serif text-title-lg font-bold text-primary"
+								/>
 							</div>
 							<button
 								type="button"

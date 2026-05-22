@@ -6,6 +6,7 @@ import { Footer } from "./Footer";
 import { Header } from "./Header";
 import { MobileNavigation } from "./MobileNavigation";
 import { Sidebar } from "./Sidebar";
+import { BrandLogo } from "../BrandLogo";
 
 export function AppLayout() {
 	const [user, setUser] = useState<CurrentUser | null>(null);
@@ -28,13 +29,17 @@ export function AppLayout() {
 		return (
 			<div className="grid min-h-screen place-items-center bg-background px-margin text-on-surface">
 				<div className="flex w-full max-w-sm flex-col items-center gap-lg text-center">
-					<div className="relative grid size-20 place-items-center rounded-full bg-primary-container text-on-primary-container shadow-popover">
-						<span className="material-symbols-outlined text-headline-lg">hub</span>
-						<span className="absolute inset-0 animate-ping rounded-full border border-primary opacity-25" />
-					</div>
+					<BrandLogo
+						className="h-16 w-16"
+						showText={false}
+					/>
 					<div className="space-y-xs">
-						<p className="font-serif text-headline-md text-primary">PulseBoard</p>
-						<p className="font-sans text-body-lg text-on-surface-variant">Preparing your workspace</p>
+						<p className="font-serif text-headline-md text-primary">
+							Votyx
+						</p>
+						<p className="font-sans text-body-lg text-on-surface-variant ">
+							Preparing your workspace
+						</p>
 					</div>
 					<div className="h-0.5 w-full overflow-hidden rounded-full bg-surface-container-high">
 						<div className="h-full w-1/2 animate-pulse rounded-full bg-primary" />
@@ -49,7 +54,9 @@ export function AppLayout() {
 			<div className="flex min-h-screen bg-background text-on-background">
 				<Sidebar
 					isExpanded={isSidebarExpanded}
-					onToggleExpanded={() => setIsSidebarExpanded((isExpanded) => !isExpanded)}
+					onToggleExpanded={() =>
+						setIsSidebarExpanded((isExpanded) => !isExpanded)
+					}
 					user={user}
 				/>
 

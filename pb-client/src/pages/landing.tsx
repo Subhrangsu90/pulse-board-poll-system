@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { authService } from "../services/api/authService";
+import { BrandLogo } from "../components/BrandLogo";
 
 export default function Landing() {
 	const navigate = useNavigate();
@@ -21,14 +22,10 @@ export default function Landing() {
 		return (
 			<div className="grid min-h-screen place-items-center bg-background px-margin text-on-surface">
 				<div className="flex flex-col items-center gap-md text-center">
-					<div className="grid h-16 w-16 place-items-center rounded-full bg-primary-container text-on-primary-container shadow-popover">
-						<span className="material-symbols-outlined text-headline-md">
-							analytics
-						</span>
-					</div>
+					<BrandLogo className="h-16 w-16" showText={false} />
 					<div>
 						<p className="font-serif text-headline-md text-primary">
-							PulseBoard
+							Votyx
 						</p>
 						<p className="font-sans text-body-md text-on-surface-variant">
 							Checking your session
@@ -45,16 +42,7 @@ export default function Landing() {
 				id="top"
 				className="sticky top-0 z-50 w-full border-b border-outline-variant bg-surface/95 backdrop-blur-md">
 				<div className="mx-auto flex w-full max-w-7xl items-center justify-between px-margin py-md">
-					<div className="flex items-center gap-2">
-						<span
-							className="material-symbols-outlined text-primary"
-							data-icon="analytics">
-							analytics
-						</span>
-						<span className="font-serif text-title-lg font-bold text-primary">
-							PulseBoard
-						</span>
-					</div>
+					<BrandLogo className="h-8 w-8" textClassName="font-serif text-title-lg font-bold text-primary" />
 					<nav className="hidden md:flex items-center gap-xl">
 						<a
 							className="text-primary font-bold border-b-2 border-primary pb-1 font-sans text-label-lg"
@@ -349,16 +337,7 @@ export default function Landing() {
 			<footer className="w-full  border-t border-outline-variant bg-surface-container-highest dark:bg-surface/95">
 				<div className="w-full px-margin py-xl flex flex-col md:flex-row justify-between items-center gap-md max-w-7xl mx-auto">
 					<div className="flex flex-col items-center md:items-start gap-sm">
-						<div className="flex items-center gap-2">
-							<span
-								className="material-symbols-outlined text-primary"
-								data-icon="analytics">
-								analytics
-							</span>
-							<span className="font-serif text-title-lg text-primary font-bold">
-								PulseBoard
-							</span>
-						</div>
+						<BrandLogo className="h-6 w-6" textClassName="font-serif text-title-lg text-primary font-bold" />
 						<p className="font-sans text-body-md text-on-surface-variant">
 							Architecting Digital Mindfulness.
 						</p>
@@ -386,7 +365,7 @@ export default function Landing() {
 						</button>
 					</div>
 					<div className="text-on-surface-variant font-sans text-label-md opacity-70">
-						© 2026 PulseBoard.
+						© 2026 Votyx.
 					</div>
 				</div>
 			</footer>

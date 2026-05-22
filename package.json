@@ -1,7 +1,7 @@
 {
-	"name": "pulse-board-poll-system",
+	"name": "votyx-poll-system",
 	"version": "1.0.0",
-	"description": "Pulse Board Poll System - A real-time polling application",
+	"description": "Votyx Poll System - A real-time polling application",
 	"private": true,
 	"type": "module",
 	"scripts": {

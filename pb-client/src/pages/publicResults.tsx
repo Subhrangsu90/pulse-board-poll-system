@@ -11,7 +11,9 @@ import {
 } from "../services/realtime/pollSocket";
 
 function getSlugFromPath() {
-	const match = window.location.pathname.match(/\/public\/poll\/([^/]+)\/results$/);
+	const match = window.location.pathname.match(
+		/\/public\/poll\/([^/]+)\/results$/,
+	);
 	return match?.[1] ?? "";
 }
 
@@ -19,14 +21,22 @@ function applyLiveVote(results: PollResults, event: PollVoteEvent) {
 	if (results.poll.id !== event.pollId) return results;
 
 	const questions = results.questions.map((question) => {
-		const hasOption = question.options.some((option) => option.id === event.optionId);
+		const hasOption = question.options.some(
+			(option) => option.id === event.optionId,
+		);
 		if (!hasOption) return question;
 
 		const options = question.options.map((option) => ({
 			...option,
-			selectionCount: option.id === event.optionId ? event.count : option.selectionCount,
+			selectionCount:
+				option.id === event.optionId
+					? event.count
+					: option.selectionCount,
 		}));
-		const totalSelections = options.reduce((total, option) => total + option.selectionCount, 0);
+		const totalSelections = options.reduce(
+			(total, option) => total + option.selectionCount,
+			0,
+		);
 
 		return {
 			...question,
@@ -34,7 +44,12 @@ function applyLiveVote(results: PollResults, event: PollVoteEvent) {
 			totalSelections,
 			options: options.map((option) => ({
 				...option,
-				percentage: totalSelections === 0 ? 0 : Math.round((option.selectionCount / totalSelections) * 100),
+				percentage:
+					totalSelections === 0
+						? 0
+						: Math.round(
+								(option.selectionCount / totalSelections) * 100,
+							),
 			})),
 		};
 	});
@@ -43,8 +58,14 @@ function applyLiveVote(results: PollResults, event: PollVoteEvent) {
 		...results,
 		summary: {
 			...results.summary,
-			totalResponses: Math.max(results.summary.totalResponses, event.totalVotes),
-			totalAnswerSelections: questions.reduce((total, question) => total + question.totalSelections, 0),
+			totalResponses: Math.max(
+				results.summary.totalResponses,
+				event.totalVotes,
+			),
+			totalAnswerSelections: questions.reduce(
+				(total, question) => total + question.totalSelections,
+				0,
+			),
 			lastSubmittedAt: event.submittedAt ?? new Date().toISOString(),
 		},
 		questions,
@@ -65,7 +86,12 @@ export default function PublicResults() {
 			try {
 				setResults(await pollService.getPublicPollResults(slug));
 			} catch (loadError) {
-				setError(getApiErrorMessage(loadError, "Poll results are not available."));
+				setError(
+					getApiErrorMessage(
+						loadError,
+						"Poll results are not available.",
+					),
+				);
 			} finally {
 				setIsLoading(false);
 			}
@@ -82,7 +108,11 @@ export default function PublicResults() {
 		socket.on("connect", join);
 		join();
 		socket.on("poll:vote", (event: PollVoteEvent) => {
-			setResults((currentResults) => (currentResults ? applyLiveVote(currentResults, event) : currentResults));
+			setResults((currentResults) =>
+				currentResults
+					? applyLiveVote(currentResults, event)
+					: currentResults,
+			);
 		});
 		socket.on("poll:analytics", (event: PollAnalyticsEvent) => {
 			if (event.pollId !== pollId) return;
@@ -93,11 +123,15 @@ export default function PublicResults() {
 							...currentResults,
 							summary: {
 								...currentResults.summary,
-								activeViewers: event.activeViewers ?? currentResults.summary.activeViewers,
-								regions: event.regions ?? currentResults.summary.regions,
+								activeViewers:
+									event.activeViewers ??
+									currentResults.summary.activeViewers,
+								regions:
+									event.regions ??
+									currentResults.summary.regions,
 							},
 						}
-					: currentResults
+					: currentResults,
 			);
 		});
 
@@ -108,7 +142,11 @@ export default function PublicResults() {
 	}, [results?.poll.id]);
 
 	if (isLoading) {
-		return <main className="min-h-screen bg-surface p-xl text-on-surface">Loading results...</main>;
+		return (
+			<main className="min-h-screen bg-surface p-xl text-on-surface">
+				Loading results...
+			</main>
+		);
 	}
 
 	if (error || !results) {
@@ -126,25 +164,38 @@ export default function PublicResults() {
 			<section className="mx-auto max-w-6xl space-y-gutter px-md py-xl">
 				<header className="border-b border-outline-variant pb-lg">
 					<div className="mb-sm flex flex-wrap items-center gap-sm">
-						<span className="rounded-full bg-primary-fixed px-3 py-1 font-label-md text-label-md text-on-primary-fixed">
-							{results.poll.status === "active" ? "Live results" : "Final results"}
+						<span className="rounded-full bg-primary-fixed px-3 py-1 font-sans text-label-md text-on-primary-fixed">
+							{results.poll.status === "active"
+								? "Live results"
+								: "Final results"}
 						</span>
-						<span className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant">
+						<span className="rounded-full bg-surface-container-high px-3 py-1 font-sans text-label-md text-on-surface-variant">
 							{results.summary.activeViewers ?? 0} viewing
 						</span>
 					</div>
-					<h1 className="font-serif text-display-md text-primary">{results.poll.title}</h1>
+					<h1 className="font-serif text-display-md text-primary">
+						{results.poll.title}
+					</h1>
 					{results.poll.description ? (
-						<p className="mt-sm max-w-3xl font-body-lg text-on-surface-variant">
+						<p className="mt-sm max-w-3xl font-sans text-on-surface-variant">
 							{results.poll.description}
 						</p>
 					) : null}
 				</header>
 
 				<div className="grid grid-cols-1 gap-gutter md:grid-cols-3">
-					<Metric label="Responses" value={results.summary.totalResponses} />
-					<Metric label="Selections" value={results.summary.totalAnswerSelections} />
-					<Metric label="Authenticated" value={results.summary.authenticatedResponses} />
+					<Metric
+						label="Responses"
+						value={results.summary.totalResponses}
+					/>
+					<Metric
+						label="Selections"
+						value={results.summary.totalAnswerSelections}
+					/>
+					<Metric
+						label="Authenticated"
+						value={results.summary.authenticatedResponses}
+					/>
 				</div>
 
 				<AudienceOriginCard
@@ -157,22 +208,25 @@ export default function PublicResults() {
 						<article
 							className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg"
 							key={question.id}>
-							<h2 className="mb-sm font-title-lg text-title-lg text-on-surface">
+							<h2 className="mb-sm font-serif text-title-lg text-on-surface">
 								{questionIndex + 1}. {question.questionText}
 							</h2>
 							<div className="space-y-md">
 								{question.options.map((option) => (
 									<div key={option.id}>
-										<div className="mb-xs flex justify-between gap-md font-label-lg text-label-lg">
+										<div className="mb-xs flex justify-between gap-md font-sans text-label-lg">
 											<span>{option.optionText}</span>
 											<span className="text-primary">
-												{option.selectionCount} ({option.percentage}%)
+												{option.selectionCount} (
+												{option.percentage}%)
 											</span>
 										</div>
 										<div className="h-2 overflow-hidden rounded-full bg-surface-container-high">
 											<div
 												className="h-full rounded-full bg-secondary-container"
-												style={{ width: `${option.percentage}%` }}
+												style={{
+													width: `${option.percentage}%`,
+												}}
 											/>
 										</div>
 									</div>
@@ -189,8 +243,12 @@ export default function PublicResults() {
 function Metric({ label, value }: { label: string; value: number }) {
 	return (
 		<div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
-			<p className="font-label-md text-label-md uppercase text-on-surface-variant">{label}</p>
-			<p className="font-display-lg text-3xl font-bold text-primary">{value}</p>
+			<p className="font-sans text-label-md uppercase text-on-surface-variant">
+				{label}
+			</p>
+			<p className="font-serif text-3xl font-bold text-primary">
+				{value}
+			</p>
 		</div>
 	);
 }

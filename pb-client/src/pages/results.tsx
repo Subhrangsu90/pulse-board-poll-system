@@ -263,9 +263,15 @@ function useThemeColors() {
 		const updateColors = () => {
 			const computed = getComputedStyle(document.documentElement);
 			setColors({
-				primary: computed.getPropertyValue("--color-primary").trim() || "#316342",
-				secondary: computed.getPropertyValue("--color-secondary").trim() || "#4c644e",
-				error: computed.getPropertyValue("--color-error").trim() || "#ba1a1a",
+				primary:
+					computed.getPropertyValue("--color-primary").trim() ||
+					"#316342",
+				secondary:
+					computed.getPropertyValue("--color-secondary").trim() ||
+					"#4c644e",
+				error:
+					computed.getPropertyValue("--color-error").trim() ||
+					"#ba1a1a",
 			});
 		};
 
@@ -481,7 +487,7 @@ export default function Results() {
 	if (isLoadingPolls) {
 		return (
 			<section className="rounded-xl border border-outline-variant bg-surface-container p-xl">
-				<p className="font-body-md text-on-surface-variant">
+				<p className="font-sans text-on-surface-variant">
 					Loading results...
 				</p>
 			</section>
@@ -497,7 +503,7 @@ export default function Results() {
 				<h2 className="mb-sm font-serif text-headline-md text-primary">
 					No polls yet
 				</h2>
-				<p className="font-body-md text-on-surface-variant">
+				<p className="font-sans text-on-surface-variant">
 					Create and publish a poll before reviewing results.
 				</p>
 			</section>
@@ -521,7 +527,7 @@ export default function Results() {
 				<div className="space-y-sm">
 					<div className="flex flex-wrap items-center gap-sm">
 						<span
-							className={`flex items-center gap-xs rounded px-2 py-0.5 font-label-md text-label-md ${
+							className={`flex items-center gap-xs rounded px-2 py-0.5 font-sans text-label-md ${
 								results?.poll.status === "active"
 									? "animate-pulse border border-error/20 bg-error/10 text-error"
 									: results
@@ -534,7 +540,7 @@ export default function Results() {
 							{results?.poll.status ?? "loading"}
 						</span>
 						{results ? (
-							<span className="flex items-center gap-xs rounded border border-outline-variant bg-surface-container-high px-2 py-0.5 font-label-md text-label-md text-on-surface-variant">
+							<span className="flex items-center gap-xs rounded border border-outline-variant bg-surface-container-high px-2 py-0.5 font-sans text-label-md text-on-surface-variant">
 								<span className="material-symbols-outlined text-[16px]">
 									schedule
 								</span>
@@ -543,7 +549,7 @@ export default function Results() {
 							</span>
 						) : null}
 						{livePulse ? (
-							<span className="rounded bg-primary-fixed px-2 py-0.5 font-label-md text-label-md text-on-primary-fixed">
+							<span className="rounded bg-primary-fixed px-2 py-0.5 font-sans text-label-md text-on-primary-fixed">
 								Live update
 							</span>
 						) : null}
@@ -551,7 +557,7 @@ export default function Results() {
 					<h2 className="font-serif text-headline-md text-primary">
 						{results?.poll.title ?? "Poll results"}
 					</h2>
-					<p className="max-w-3xl font-body-md text-on-surface-variant">
+					<p className="max-w-3xl font-sans text-on-surface-variant">
 						{results?.poll.description ||
 							"Review response totals, answer distribution, and the latest submissions."}
 					</p>
@@ -561,28 +567,28 @@ export default function Results() {
 					{results ? (
 						<div className="grid grid-cols-2 items-center gap-md rounded-xl border border-outline-variant bg-surface-container-low px-lg py-md md:flex">
 							<div className="px-4">
-								<p className="font-label-md text-label-md uppercase text-on-surface-variant">
+								<p className="font-sans text-label-md uppercase text-on-surface-variant">
 									Total Participants
 								</p>
-								<p className="font-display-lg text-2xl font-bold text-primary md:text-3xl">
+								<p className="font-serif text-2xl font-bold text-primary md:text-3xl">
 									{results.summary.totalResponses}
 								</p>
 							</div>
 							<div className="hidden h-10 w-px bg-outline-variant md:block" />
 							<div className="px-4">
-								<p className="font-label-md text-label-md uppercase text-on-surface-variant">
+								<p className="font-sans text-label-md uppercase text-on-surface-variant">
 									Response Count
 								</p>
-								<p className="font-display-lg text-2xl font-bold text-primary md:text-3xl">
+								<p className="font-serif text-2xl font-bold text-primary md:text-3xl">
 									{results.summary.totalAnswerSelections}
 								</p>
 							</div>
 							<div className="hidden h-10 w-px bg-outline-variant md:block" />
 							<div className="px-4">
-								<p className="font-label-md text-label-md uppercase text-on-surface-variant">
+								<p className="font-sans text-label-md uppercase text-on-surface-variant">
 									Live Viewers
 								</p>
-								<p className="font-display-lg text-2xl font-bold text-primary md:text-3xl">
+								<p className="font-serif text-2xl font-bold text-primary md:text-3xl">
 									{results.summary.activeViewers ?? 0}
 								</p>
 							</div>
@@ -590,7 +596,7 @@ export default function Results() {
 					) : null}
 					<div className="flex flex-col gap-sm md:flex-row md:items-center">
 						<select
-							className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-label-lg text-primary"
+							className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-sans text-primary"
 							onChange={(event) =>
 								setSelectedPollId(event.target.value)
 							}
@@ -604,7 +610,7 @@ export default function Results() {
 							))}
 						</select>
 						<button
-							className="flex items-center justify-center gap-xs rounded-full bg-primary-container px-lg py-sm font-label-lg text-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
+							className="flex items-center justify-center gap-xs rounded-full bg-primary-container px-lg py-sm font-sans text-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
 							disabled={!results}
 							onClick={exportResults}
 							type="button">
@@ -618,14 +624,14 @@ export default function Results() {
 			</header>
 
 			{error ? (
-				<p className="rounded-md bg-error-container px-md py-sm font-body-md text-on-error-container">
+				<p className="rounded-md bg-error-container px-md py-sm font-sans text-on-error-container">
 					{error}
 				</p>
 			) : null}
 
 			{isLoadingResults || !results ? (
 				<section className="rounded-xl border border-outline-variant bg-surface-container p-xl">
-					<p className="font-body-md text-on-surface-variant">
+					<p className="font-sans text-on-surface-variant">
 						Loading selected poll...
 					</p>
 				</section>
@@ -651,14 +657,14 @@ export default function Results() {
 								<h3 className="font-serif text-title-lg text-primary">
 									Question summaries
 								</h3>
-								<span className="font-label-md text-label-md text-on-surface-variant">
+								<span className="font-sans text-label-md text-on-surface-variant">
 									{results.questions.length} question
 									{results.questions.length === 1 ? "" : "s"}
 								</span>
 							</div>
 
 							{results.questions.length === 0 ? (
-								<p className="rounded-xl border border-outline-variant bg-surface-container p-lg font-body-md text-on-surface-variant">
+								<p className="rounded-xl border border-outline-variant bg-surface-container p-lg font-sans text-on-surface-variant">
 									This poll has no questions yet.
 								</p>
 							) : (
@@ -700,7 +706,7 @@ export default function Results() {
 								</div>
 								{publicLink ? (
 									<a
-										className="mt-lg flex items-center gap-xs font-label-lg text-primary hover:underline"
+										className="mt-lg flex items-center gap-xs font-sans text-primary hover:underline"
 										href={publicLink}
 										rel="noreferrer"
 										target="_blank">
@@ -717,7 +723,7 @@ export default function Results() {
 									Recent submissions
 								</h3>
 								{results.recentResponses.length === 0 ? (
-									<p className="font-body-md text-on-surface-variant">
+									<p className="font-sans text-on-surface-variant">
 										No responses have arrived yet.
 									</p>
 								) : (
@@ -728,16 +734,16 @@ export default function Results() {
 													className="rounded-lg border border-outline-variant bg-surface-container-lowest p-md"
 													key={response.id}>
 													<div className="flex items-center justify-between gap-md">
-														<span className="font-label-lg text-on-surface">
+														<span className="font-sans text-on-surface">
 															{formatDateTime(
 																response.submittedAt,
 															)}
 														</span>
-														<span className="rounded-full bg-secondary-container px-2 py-0.5 font-label-md text-label-md text-on-secondary-container">
+														<span className="rounded-full bg-secondary-container px-2 py-0.5 font-sans text-label-md text-on-secondary-container">
 															{response.status}
 														</span>
 													</div>
-													<p className="mt-xs font-label-md text-label-md text-on-surface-variant">
+													<p className="mt-xs font-sans text-label-md text-on-surface-variant">
 														{response.isAnonymous
 															? "Anonymous"
 															: "Authenticated"}{" "}
@@ -816,15 +822,15 @@ function ActivityInsights({ results }: { results: PollResults }) {
 					<h3 className="font-serif text-title-lg">
 						Participation Insights
 					</h3>
-					<p className="font-label-md text-on-surface-variant">
+					<p className="font-sans text-on-surface-variant">
 						Active engagement trends
 					</p>
 				</div>
 				<div className="text-right">
-					<p className="font-label-md text-[10px] uppercase text-on-surface-variant">
+					<p className="font-sans text-[10px] uppercase text-on-surface-variant">
 						Latest Activity
 					</p>
-					<p className="font-title-lg font-bold text-primary">
+					<p className="font-serif font-bold text-primary">
 						{formatDateTime(results.summary.lastSubmittedAt)}
 					</p>
 				</div>
@@ -861,10 +867,10 @@ function VelocityPanel({
 			<div className="flex-1 rounded-xl border border-outline-variant bg-surface-container-high p-lg">
 				<div className="mb-4 flex items-start justify-between">
 					<div>
-						<p className="font-label-md text-[10px] uppercase text-on-surface-variant">
+						<p className="font-sans text-[10px] uppercase text-on-surface-variant">
 							Response Velocity
 						</p>
-						<h4 className="font-headline-md text-2xl font-bold text-primary">
+						<h4 className="font-serif text-2xl font-bold text-primary">
 							{results.summary.totalResponses}
 						</h4>
 					</div>
@@ -891,10 +897,10 @@ function VelocityPanel({
 			</div>
 			<div className="flex flex-1 gap-gutter">
 				<div className="flex flex-1 flex-col justify-center rounded-xl border border-outline-variant/20 bg-secondary-container p-4 text-on-secondary-container">
-					<p className="mb-1 font-label-md text-[10px] uppercase">
+					<p className="mb-1 font-sans text-[10px] uppercase">
 						Completion
 					</p>
-					<h4 className="font-display-lg text-2xl font-bold">
+					<h4 className="font-serif text-2xl font-bold">
 						{completionPercent}%
 					</h4>
 					<div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-on-secondary-container/20">
@@ -905,10 +911,10 @@ function VelocityPanel({
 					</div>
 				</div>
 				<div className="flex flex-1 flex-col justify-center rounded-xl border border-outline-variant bg-surface-container-high p-4">
-					<p className="mb-1 font-label-md text-[10px] uppercase text-on-surface-variant">
+					<p className="mb-1 font-sans text-[10px] uppercase text-on-surface-variant">
 						Avg. Reach
 					</p>
-					<h4 className="font-display-lg text-2xl font-bold text-on-surface">
+					<h4 className="font-serif text-2xl font-bold text-on-surface">
 						{responseRate}
 					</h4>
 					<p className="mt-1 flex items-center gap-1 text-[9px] text-on-surface-variant">
@@ -959,7 +965,7 @@ function AudienceOriginPanel({ results }: { results: PollResults }) {
 	return (
 		<div className="space-y-md rounded-xl border border-outline-variant bg-surface-container-lowest p-md md:col-span-7">
 			<div className="flex items-center justify-between border-b border-outline-variant pb-xs">
-				<p className="font-label-md text-[10px] uppercase text-on-surface-variant">
+				<p className="font-sans text-[10px] uppercase text-on-surface-variant">
 					Live Audience Origin
 				</p>
 				<span className="material-symbols-outlined text-[16px] text-on-surface-variant">
@@ -969,7 +975,7 @@ function AudienceOriginPanel({ results }: { results: PollResults }) {
 			<div className="flex flex-col items-center gap-lg ">
 				<div className="w-full space-y-4">
 					{regions.length === 0 ? (
-						<p className="rounded-lg bg-surface-container p-md font-body-md text-on-surface-variant">
+						<p className="rounded-lg bg-surface-container p-md font-sans text-on-surface-variant">
 							Waiting for live viewers to join this poll.
 						</p>
 					) : (
@@ -1030,7 +1036,7 @@ function AudienceSegmentsPanel({ results }: { results: PollResults }) {
 	return (
 		<div className="space-y-md rounded-xl border border-outline-variant bg-surface-container p-md md:col-span-5">
 			<div className="flex items-center justify-between border-b border-outline-variant pb-xs">
-				<p className="font-label-md text-[10px] uppercase text-on-surface-variant">
+				<p className="font-sans text-[10px] uppercase text-on-surface-variant">
 					Audience Segments
 				</p>
 				<span className="material-symbols-outlined text-[16px] text-on-surface-variant">
@@ -1053,12 +1059,12 @@ function AudienceSegmentsPanel({ results }: { results: PollResults }) {
 					value={results.summary.authenticatedResponses}
 				/>
 				<div className="border-t border-outline-variant pt-2">
-					<p className="mb-2 font-label-md text-[11px] text-on-surface-variant">
+					<p className="mb-2 font-sans text-[11px] text-on-surface-variant">
 						Response Mode
 					</p>
 					<div className="flex gap-2">
 						<div className="flex-1 rounded border border-outline-variant/50 bg-surface-container-high p-2 text-center">
-							<p className="font-label-md font-bold text-primary">
+							<p className="font-sans font-bold text-primary">
 								{results.poll.responseMode === "authenticated"
 									? "Verified"
 									: "Open"}
@@ -1068,7 +1074,7 @@ function AudienceSegmentsPanel({ results }: { results: PollResults }) {
 							</p>
 						</div>
 						<div className="flex-1 rounded border border-outline-variant/50 bg-surface-container-high p-2 text-center">
-							<p className="font-label-md font-bold text-primary">
+							<p className="font-sans font-bold text-primary">
 								{results.questions.length}
 							</p>
 							<p className="text-[9px] uppercase text-on-surface-variant">
@@ -1120,29 +1126,29 @@ function QuestionResultCard({
 			<div className="mb-lg flex flex-col justify-between gap-md md:flex-row md:items-start">
 				<div>
 					<div className="mb-sm flex flex-wrap items-center gap-xs">
-						<span className="rounded-full bg-secondary-container px-3 py-1 font-label-md text-label-md text-on-secondary-container">
+						<span className="rounded-full bg-secondary-container px-3 py-1 font-sans text-label-md text-on-secondary-container">
 							Question {questionIndex + 1}
 						</span>
-						<span className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant">
+						<span className="rounded-full bg-surface-container-high px-3 py-1 font-sans text-label-md text-on-surface-variant">
 							{question.questionType === "multiple_choice"
 								? "Multiple choice"
 								: "Single choice"}
 						</span>
 						{question.isRequired ? (
-							<span className="rounded-full bg-primary-container px-3 py-1 font-label-md text-label-md text-on-primary-container">
+							<span className="rounded-full bg-primary-container px-3 py-1 font-sans text-label-md text-on-primary-container">
 								Required
 							</span>
 						) : null}
 					</div>
-					<h4 className="font-title-lg text-title-lg text-on-surface">
+					<h4 className="font-serif text-title-lg text-on-surface">
 						{question.questionText}
 					</h4>
 				</div>
 				<div className="rounded-lg bg-surface-container-low px-md py-sm text-right">
-					<p className="font-label-md text-label-md text-on-surface-variant">
+					<p className="font-sans text-label-md text-on-surface-variant">
 						Responses
 					</p>
-					<p className="font-title-lg text-title-lg text-primary">
+					<p className="font-serif text-title-lg text-primary">
 						{question.responseCount}
 					</p>
 				</div>
@@ -1158,7 +1164,7 @@ function QuestionResultCard({
 					<div
 						className="space-y-xs"
 						key={option.id}>
-						<div className="flex items-center justify-between gap-md font-label-lg text-label-lg">
+						<div className="flex items-center justify-between gap-md font-sans text-label-lg">
 							<span className="min-w-0 break-words text-on-surface">
 								{option.optionText}
 							</span>
@@ -1193,12 +1199,12 @@ function SubmissionLog({
 					<h3 className="font-serif text-title-lg">
 						Verified Submission Log
 					</h3>
-					<p className="font-label-md text-label-md text-on-surface-variant">
+					<p className="font-sans text-label-md text-on-surface-variant">
 						Real-time curation feed
 					</p>
 				</div>
 				<button
-					className="flex items-center gap-2 rounded-full bg-primary px-lg py-sm font-label-lg text-xs text-on-primary transition-all hover:opacity-90"
+					className="flex items-center gap-2 rounded-full bg-primary px-lg py-sm font-sans text-xs text-on-primary transition-all hover:opacity-90"
 					onClick={onExport}
 					type="button">
 					<span className="material-symbols-outlined text-[18px]">
@@ -1211,16 +1217,16 @@ function SubmissionLog({
 				<table className="w-full border-collapse text-left">
 					<thead>
 						<tr className="border-b border-outline-variant bg-surface-container-high">
-							<th className="px-md py-sm font-label-lg text-on-surface-variant">
+							<th className="px-md py-sm font-sans text-on-surface-variant">
 								Time
 							</th>
-							<th className="px-md py-sm font-label-lg text-on-surface-variant">
+							<th className="px-md py-sm font-sans text-on-surface-variant">
 								Segment
 							</th>
-							<th className="px-md py-sm font-label-lg text-on-surface-variant">
+							<th className="px-md py-sm font-sans text-on-surface-variant">
 								Response
 							</th>
-							<th className="px-md py-sm font-label-lg text-on-surface-variant">
+							<th className="px-md py-sm font-sans text-on-surface-variant">
 								Status
 							</th>
 						</tr>
@@ -1229,7 +1235,7 @@ function SubmissionLog({
 						{responses.length === 0 ? (
 							<tr>
 								<td
-									className="px-md py-md font-body-md text-on-surface-variant"
+									className="px-md py-md font-sans text-on-surface-variant"
 									colSpan={4}>
 									No submissions yet.
 								</td>
@@ -1239,7 +1245,7 @@ function SubmissionLog({
 								<tr
 									className="transition-colors hover:bg-surface-container-low"
 									key={response.id}>
-									<td className="whitespace-nowrap px-md py-md font-body-md text-xs text-on-surface-variant">
+									<td className="whitespace-nowrap px-md py-md font-sans text-xs text-on-surface-variant">
 										{formatDateTime(response.submittedAt)}
 									</td>
 									<td className="px-md py-md">
@@ -1249,7 +1255,7 @@ function SubmissionLog({
 												: "Verified"}
 										</span>
 									</td>
-									<td className="px-md py-md font-body-md text-xs italic text-on-surface">
+									<td className="px-md py-md font-sans text-xs italic text-on-surface">
 										{response.answerCount} answer
 										{response.answerCount === 1
 											? ""
@@ -1284,7 +1290,7 @@ function SplitBar({
 
 	return (
 		<div className="space-y-xs">
-			<div className="flex items-center justify-between gap-md font-label-lg text-label-lg">
+			<div className="flex items-center justify-between gap-md font-sans text-label-lg">
 				<span>{label}</span>
 				<span className="text-primary">
 					{value} ({percentage}%)

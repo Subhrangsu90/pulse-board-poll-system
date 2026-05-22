@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ThemeToggleButton } from "../ThemeControls";
 import { useWorkspacePreferences } from "../workspacePreferencesContext";
 import { authService, type CurrentUser } from "../../services/api/authService";
+import { BrandLogo } from "../BrandLogo";
 
 type HeaderProps = {
 	user: CurrentUser | null;
@@ -16,7 +17,7 @@ export function Header({ user }: HeaderProps) {
 	return (
 		<header className="sticky top-0 z-50 flex w-full items-center justify-between border-b border-outline-variant bg-surface px-margin py-sm">
 			<div className="flex items-center gap-md">
-				<span className="font-serif text-headline-lg font-bold text-primary">PulseBoard</span>
+				<BrandLogo className="h-8 w-8" textClassName="font-serif text-headline-lg font-bold text-primary" />
 			</div>
 			<div className="flex items-center gap-sm">
 				<span className="hidden font-sans text-label-lg text-on-surface-variant md:block">

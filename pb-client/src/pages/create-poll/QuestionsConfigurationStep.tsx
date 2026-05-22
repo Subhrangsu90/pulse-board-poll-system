@@ -24,7 +24,7 @@ type QuestionsConfigurationStepProps = {
 			questionType: QuestionType;
 			isRequired: boolean;
 			options: Array<{ optionText: string }>;
-		}
+		},
 	) => Promise<boolean>;
 	onDeleteQuestion: (questionId: string) => Promise<void>;
 };
@@ -39,14 +39,19 @@ export function QuestionsConfigurationStep({
 }: QuestionsConfigurationStepProps) {
 	const toast = useToast();
 	const [questionText, setQuestionText] = useState("");
-	const [questionType, setQuestionType] = useState<QuestionType>("single_choice");
+	const [questionType, setQuestionType] =
+		useState<QuestionType>("single_choice");
 	const [isRequired, setIsRequired] = useState(true);
-	const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+	const [editingQuestionId, setEditingQuestionId] = useState<string | null>(
+		null,
+	);
 	const [options, setOptions] = useState<DraftQuestionOption[]>([
 		createDraftOption(),
 		createDraftOption(),
 	]);
-	const [draggedOptionIndex, setDraggedOptionIndex] = useState<number | null>(null);
+	const [draggedOptionIndex, setDraggedOptionIndex] = useState<number | null>(
+		null,
+	);
 	const [error, setError] = useState<string | null>(null);
 
 	const showError = (message: string) => {
@@ -64,17 +69,22 @@ export function QuestionsConfigurationStep({
 	const updateOption = (index: number, optionText: string) => {
 		setOptions((currentOptions) =>
 			currentOptions.map((option, optionIndex) =>
-				optionIndex === index ? { ...option, optionText } : option
-			)
+				optionIndex === index ? { ...option, optionText } : option,
+			),
 		);
 	};
 
 	const addOption = () => {
-		setOptions((currentOptions) => [...currentOptions, createDraftOption()]);
+		setOptions((currentOptions) => [
+			...currentOptions,
+			createDraftOption(),
+		]);
 	};
 
 	const removeOption = (index: number) => {
-		setOptions((currentOptions) => currentOptions.filter((_, optionIndex) => optionIndex !== index));
+		setOptions((currentOptions) =>
+			currentOptions.filter((_, optionIndex) => optionIndex !== index),
+		);
 	};
 
 	const resetForm = () => {
@@ -95,7 +105,7 @@ export function QuestionsConfigurationStep({
 			question.options.map((option) => ({
 				clientId: option.id,
 				optionText: option.optionText,
-			}))
+			})),
 		);
 	};
 
@@ -117,7 +127,10 @@ export function QuestionsConfigurationStep({
 		setDraggedOptionIndex(index);
 	};
 
-	const handleOptionDragOver = (event: DragEvent<HTMLDivElement>, index: number) => {
+	const handleOptionDragOver = (
+		event: DragEvent<HTMLDivElement>,
+		index: number,
+	) => {
 		event.preventDefault();
 
 		if (draggedOptionIndex === null || draggedOptionIndex === index) return;
@@ -176,10 +189,12 @@ export function QuestionsConfigurationStep({
 					className="bg-surface-container p-xl rounded-xl border border-outline-variant"
 					onSubmit={handleSubmit}>
 					<div className="mb-lg flex flex-col gap-xs">
-						<span className="font-label-md text-label-md text-secondary">
-							{editingQuestionId ? "Editing question" : `Question ${questions.length + 1}`}
+						<span className="font-sans text-label-md text-secondary">
+							{editingQuestionId
+								? "Editing question"
+								: `Question ${questions.length + 1}`}
 						</span>
-						<h3 className="font-title-lg text-title-lg text-on-surface">
+						<h3 className="font-serif text-title-lg text-on-surface">
 							{editingQuestionId
 								? "Update this question and its answers"
 								: "Add a question and configure its answers"}
@@ -188,12 +203,14 @@ export function QuestionsConfigurationStep({
 
 					<div className="flex flex-col gap-md">
 						<div className="flex flex-col gap-xs">
-							<label className="font-label-lg text-label-lg font-Inter text-secondary ml-xs">
+							<label className="font-sans text-label-lg font-Inter text-secondary ml-xs">
 								Question Text
 							</label>
 							<input
-								className="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary-container outline-none py-md px-md rounded-t-lg font-title-lg text-title-lg font-Literata text-on-surface transition-all placeholder:text-outline-variant"
-								onChange={(event) => setQuestionText(event.target.value)}
+								className="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary-container outline-none py-md px-md rounded-t-lg font-serif text-title-lg font-Literata text-on-surface transition-all placeholder:text-outline-variant"
+								onChange={(event) =>
+									setQuestionText(event.target.value)
+								}
 								placeholder="What is your primary focus for this quarter?"
 								type="text"
 								value={questionText}
@@ -201,7 +218,7 @@ export function QuestionsConfigurationStep({
 						</div>
 
 						<div className="mt-lg flex flex-col gap-md">
-							<label className="font-label-lg text-label-lg font-Inter text-secondary ml-xs">
+							<label className="font-sans text-label-lg font-Inter text-secondary ml-xs">
 								Response Options
 							</label>
 
@@ -215,8 +232,12 @@ export function QuestionsConfigurationStep({
 									draggable
 									key={option.clientId}
 									onDragEnd={handleOptionDragEnd}
-									onDragOver={(event) => handleOptionDragOver(event, index)}
-									onDragStart={() => handleOptionDragStart(index)}>
+									onDragOver={(event) =>
+										handleOptionDragOver(event, index)
+									}
+									onDragStart={() =>
+										handleOptionDragStart(index)
+									}>
 									<span
 										aria-label="Drag option"
 										className="material-symbols-outlined text-outline-variant cursor-grab"
@@ -224,13 +245,18 @@ export function QuestionsConfigurationStep({
 										drag_indicator
 									</span>
 									<input
-										className="flex-grow bg-transparent border-none outline-none font-body-lg text-body-lg font-Inter text-on-surface p-xs"
-										onChange={(event) => updateOption(index, event.target.value)}
+										className="flex-grow bg-transparent border-none outline-none font-sans text-body-lg font-Inter text-on-surface p-xs"
+										onChange={(event) =>
+											updateOption(
+												index,
+												event.target.value,
+											)
+										}
 										placeholder={`Option ${index + 1}`}
 										type="text"
 										value={option.optionText}
 									/>
-									<span className="font-label-md text-label-md text-outline">
+									<span className="font-sans text-label-md text-outline">
 										#{index + 1}
 									</span>
 									<button
@@ -246,7 +272,7 @@ export function QuestionsConfigurationStep({
 							))}
 
 							<button
-								className="flex items-center justify-center gap-sm py-md border-2 border-dashed border-outline-variant rounded-lg font-label-lg text-label-lg font-Inter text-secondary hover:bg-surface-container-high hover:border-primary-container transition-all"
+								className="flex items-center justify-center gap-sm py-md border-2 border-dashed border-outline-variant rounded-lg font-sans text-label-lg font-Inter text-secondary hover:bg-surface-container-high hover:border-primary-container transition-all"
 								onClick={addOption}
 								type="button">
 								<span className="material-symbols-outlined">
@@ -292,22 +318,25 @@ export function QuestionsConfigurationStep({
 								className="rounded-xl border border-outline-variant bg-surface-container-low p-md"
 								key={question.id}>
 								<div className="mb-sm flex items-center justify-between gap-md">
-									<h3 className="font-title-lg text-title-lg text-on-surface">
+									<h3 className="font-serif text-title-lg text-on-surface">
 										{index + 1}. {question.questionText}
 									</h3>
-									<span className="rounded-full bg-secondary-container px-3 py-1 font-label-md text-label-md text-on-secondary-container">
-										{question.questionType === "multiple_choice"
+									<span className="rounded-full bg-secondary-container px-3 py-1 font-sans text-label-md text-on-secondary-container">
+										{question.questionType ===
+										"multiple_choice"
 											? "Multiple choice"
 											: "Single choice"}
 									</span>
 								</div>
-								<p className="mb-sm font-label-md text-label-md text-on-surface-variant">
-									{question.isRequired ? "Required answer" : "Optional answer"}
+								<p className="mb-sm font-sans text-label-md text-on-surface-variant">
+									{question.isRequired
+										? "Required answer"
+										: "Optional answer"}
 								</p>
 								<ul className="space-y-xs">
 									{question.options.map((option) => (
 										<li
-											className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface"
+											className="rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-sans text-body-md text-on-surface"
 											key={option.id}>
 											{option.optionText}
 										</li>
@@ -315,14 +344,16 @@ export function QuestionsConfigurationStep({
 								</ul>
 								<div className="mt-md flex flex-wrap gap-sm">
 									<button
-										className="rounded-full bg-primary-container px-4 py-2 font-label-md text-on-primary-container"
+										className="rounded-full bg-primary-container px-4 py-2 font-sans text-on-primary-container"
 										onClick={() => editQuestion(question)}
 										type="button">
 										Edit
 									</button>
 									<button
-										className="rounded-full bg-error-container px-4 py-2 font-label-md text-on-error-container"
-										onClick={() => void onDeleteQuestion(question.id)}
+										className="rounded-full bg-error-container px-4 py-2 font-sans text-on-error-container"
+										onClick={() =>
+											void onDeleteQuestion(question.id)
+										}
 										type="button">
 										Delete
 									</button>
@@ -335,21 +366,29 @@ export function QuestionsConfigurationStep({
 
 			<aside className="md:col-span-4 flex flex-col gap-lg">
 				<div className="bg-surface-container-low p-lg rounded-xl border border-outline-variant flex flex-col gap-lg">
-					<h3 className="font-title-lg text-title-lg font-Literata text-primary">
+					<h3 className="font-serif text-title-lg font-Literata text-primary">
 						Settings
 					</h3>
 
 					<div className="flex flex-col gap-xs">
-						<label className="font-label-md text-label-md font-Inter text-secondary">
+						<label className="font-sans text-label-md font-Inter text-secondary">
 							Response Type
 						</label>
 						<div className="relative">
 							<select
-								className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-md px-md appearance-none font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary-container/20 focus:border-primary transition-all"
-								onChange={(event) => setQuestionType(event.target.value as QuestionType)}
+								className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-md px-md appearance-none font-sans text-body-md text-on-surface focus:ring-2 focus:ring-primary-container/20 focus:border-primary transition-all"
+								onChange={(event) =>
+									setQuestionType(
+										event.target.value as QuestionType,
+									)
+								}
 								value={questionType}>
-								<option value="single_choice">Single Choice</option>
-								<option value="multiple_choice">Multiple Choice</option>
+								<option value="single_choice">
+									Single Choice
+								</option>
+								<option value="multiple_choice">
+									Multiple Choice
+								</option>
 							</select>
 							<span className="material-symbols-outlined absolute right-3 top-3 text-outline pointer-events-none">
 								expand_more
@@ -359,10 +398,10 @@ export function QuestionsConfigurationStep({
 
 					<div className="flex items-center justify-between py-sm">
 						<div className="flex flex-col">
-							<span className="font-label-lg text-label-lg font-Inter text-on-surface">
+							<span className="font-sans text-label-lg font-Inter text-on-surface">
 								Required answer
 							</span>
-							<span className="font-label-md text-label-md font-Inter text-on-surface-variant">
+							<span className="font-sans text-label-md font-Inter text-on-surface-variant">
 								Voters must respond
 							</span>
 						</div>
@@ -370,7 +409,9 @@ export function QuestionsConfigurationStep({
 							<input
 								checked={isRequired}
 								className="sr-only peer"
-								onChange={(event) => setIsRequired(event.target.checked)}
+								onChange={(event) =>
+									setIsRequired(event.target.checked)
+								}
 								type="checkbox"
 							/>
 							<span className="block h-6 w-11 rounded-full bg-surface-container-highest transition-colors peer-checked:bg-primary-container"></span>
@@ -380,14 +421,14 @@ export function QuestionsConfigurationStep({
 					<div className="h-px bg-outline-variant w-full"></div>
 
 					<div className="flex flex-col gap-sm">
-						<span className="font-label-md text-label-md font-Inter text-secondary">
+						<span className="font-sans text-label-md font-Inter text-secondary">
 							Inquiry Imagery
 						</span>
 						<div className="aspect-video bg-surface-container rounded-lg border border-outline-variant flex flex-col items-center justify-center text-outline-variant gap-sm hover:bg-surface-container-high transition-all cursor-pointer">
 							<span className="material-symbols-outlined text-4xl">
 								image
 							</span>
-							<span className="font-label-md">
+							<span className="font-sans">
 								Click to upload media
 							</span>
 						</div>
@@ -399,11 +440,9 @@ export function QuestionsConfigurationStep({
 						<span className="material-symbols-outlined">
 							lightbulb
 						</span>
-						<h4 className="font-label-lg font-bold">
-							Designer Tip
-						</h4>
+						<h4 className="font-sans font-bold">Designer Tip</h4>
 					</div>
-					<p className="font-body-md text-body-md leading-relaxed opacity-90">
+					<p className="font-sans text-body-md leading-relaxed opacity-90">
 						Shorter questions (under 15 words) tend to receive 24%
 						more engagement in mindful reading environments.
 					</p>

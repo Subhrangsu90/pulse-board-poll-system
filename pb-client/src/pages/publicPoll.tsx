@@ -4,7 +4,11 @@ import { formatAudienceRegion } from "../utils/audienceRegion";
 import { useToast } from "../components/toastContext";
 import { authService, type CurrentUser } from "../services/api/authService";
 import { getApiErrorMessage } from "../services/api/apiService";
-import { pollService, type PublicPoll, type PublicPollLiveMetrics } from "../services/api/pollService";
+import {
+	pollService,
+	type PublicPoll,
+	type PublicPollLiveMetrics,
+} from "../services/api/pollService";
 import {
 	createPollSocket,
 	joinPollRoom,
@@ -41,7 +45,8 @@ export default function PublicPoll() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitted, setIsSubmitted] = useState(false);
-	const [liveMetrics, setLiveMetrics] = useState<PublicPollLiveMetrics | null>(null);
+	const [liveMetrics, setLiveMetrics] =
+		useState<PublicPollLiveMetrics | null>(null);
 
 	const showError = useCallback(
 		(message: string) => {
@@ -62,7 +67,9 @@ export default function PublicPoll() {
 			try {
 				const loadedPoll = await pollService.getPublicPollBySlug(slug);
 				setPoll(loadedPoll);
-				setLiveMetrics(await pollService.getPublicPollLiveMetrics(slug));
+				setLiveMetrics(
+					await pollService.getPublicPollLiveMetrics(slug),
+				);
 			} catch (loadError) {
 				console.error("Unable to load public poll:", loadError);
 				showError(
@@ -107,7 +114,8 @@ export default function PublicPoll() {
 				pollId: poll.id,
 				liveCounts: currentMetrics?.liveCounts ?? {},
 				totalVotes: event.totalVotes ?? currentMetrics?.totalVotes ?? 0,
-				activeViewers: event.activeViewers ?? currentMetrics?.activeViewers ?? 0,
+				activeViewers:
+					event.activeViewers ?? currentMetrics?.activeViewers ?? 0,
 				regions: event.regions ?? currentMetrics?.regions,
 			}));
 		});
@@ -212,14 +220,17 @@ export default function PublicPoll() {
 		setIsSubmitting(true);
 
 		try {
-			const submittedResponse = await pollService.submitPublicPollResponse(slug, {
-				answers: Object.entries(answers)
-					.map(([questionId, answer]) => ({
-						questionId,
-						optionIds: Array.isArray(answer) ? answer : [answer],
-					}))
-					.filter((answer) => answer.optionIds.length > 0),
-			});
+			const submittedResponse =
+				await pollService.submitPublicPollResponse(slug, {
+					answers: Object.entries(answers)
+						.map(([questionId, answer]) => ({
+							questionId,
+							optionIds: Array.isArray(answer)
+								? answer
+								: [answer],
+						}))
+						.filter((answer) => answer.optionIds.length > 0),
+				});
 			setLiveMetrics((currentMetrics) => ({
 				pollId: submittedResponse.pollId,
 				liveCounts: {
@@ -293,10 +304,10 @@ export default function PublicPoll() {
 							analytics
 						</span>
 						<span className="font-serif text-title-lg font-bold text-primary">
-							PulseBoard
+							Votyx
 						</span>
 					</div>
-					<span className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant">
+					<span className="rounded-full bg-surface-container-high px-3 py-1 font-sans text-label-md text-on-surface-variant">
 						Public poll
 					</span>
 				</div>
@@ -307,12 +318,12 @@ export default function PublicPoll() {
 					<header className="rounded-xl border border-outline-variant bg-surface-container-lowest p-xl shadow-popover">
 						<div id="poll-summary" />
 						<div className="mb-md flex flex-wrap items-center gap-xs">
-							<span className="rounded-full bg-primary-fixed px-3 py-1 font-label-md text-label-md text-on-primary-fixed">
+							<span className="rounded-full bg-primary-fixed px-3 py-1 font-sans text-label-md text-on-primary-fixed">
 								{poll.responseMode === "authenticated"
 									? "Verified responses"
 									: "Anonymous responses"}
 							</span>
-							<span className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant">
+							<span className="rounded-full bg-surface-container-high px-3 py-1 font-sans text-label-md text-on-surface-variant">
 								{poll.questions.length}{" "}
 								{poll.questions.length === 1
 									? "question"
@@ -320,7 +331,7 @@ export default function PublicPoll() {
 							</span>
 							{poll.tags.map((tag) => (
 								<span
-									className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant"
+									className="rounded-full bg-surface-container-high px-3 py-1 font-sans text-label-md text-on-surface-variant"
 									key={tag}>
 									{tag}
 								</span>
@@ -330,7 +341,7 @@ export default function PublicPoll() {
 							{poll.title}
 						</h1>
 						{poll.description ? (
-							<p className="font-body-lg text-body-lg text-on-surface-variant">
+							<p className="font-sans text-body-lg text-on-surface-variant">
 								{poll.description}
 							</p>
 						) : null}
@@ -361,7 +372,7 @@ export default function PublicPoll() {
 
 					{isCheckingAuth && requiresAuthentication ? (
 						<section className="rounded-xl border border-outline-variant bg-surface-container p-xl text-center">
-							<p className="font-body-md text-on-surface-variant">
+							<p className="font-sans text-on-surface-variant">
 								Checking response access...
 							</p>
 						</section>
@@ -372,22 +383,22 @@ export default function PublicPoll() {
 									className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg shadow-sm"
 									key={question.id}>
 									<div className="mb-md flex flex-wrap items-center gap-sm">
-										<span className="rounded-full bg-secondary-container px-3 py-1 font-label-md text-label-md text-on-secondary-container">
+										<span className="rounded-full bg-secondary-container px-3 py-1 font-sans text-label-md text-on-secondary-container">
 											Question {questionIndex + 1}
 										</span>
-										<span className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-on-surface-variant">
+										<span className="rounded-full bg-surface-container-high px-3 py-1 font-sans text-label-md text-on-surface-variant">
 											{question.questionType ===
 											"multiple_choice"
 												? "Choose multiple"
 												: "Choose one"}
 										</span>
 										{question.isRequired ? (
-											<span className="rounded-full bg-primary-container px-3 py-1 font-label-md text-label-md text-on-primary-container">
+											<span className="rounded-full bg-primary-container px-3 py-1 font-sans text-label-md text-on-primary-container">
 												Required
 											</span>
 										) : null}
 									</div>
-									<h2 className="mb-md font-title-lg text-title-lg text-on-surface">
+									<h2 className="mb-md font-serif text-title-lg text-on-surface">
 										{question.questionText}
 									</h2>
 
@@ -422,7 +433,7 @@ export default function PublicPoll() {
 																)
 													}
 													type="button">
-													<span className="font-body-lg text-body-lg">
+													<span className="font-sans text-body-lg">
 														{option.optionText}
 													</span>
 													<span className="material-symbols-outlined">
@@ -443,13 +454,13 @@ export default function PublicPoll() {
 							))}
 
 							{/* {error ? (
-							<p className="rounded-md bg-error-container px-md py-sm font-body-md text-on-error-container">
+							<p className="rounded-md bg-error-container px-md py-sm font-sans text-on-error-container">
 								{error}
 							</p>
 						) : null} */}
 
 							<button
-								className="w-full rounded-full bg-primary-container px-xl py-4 font-label-lg font-bold text-on-primary-container transition-all hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+								className="w-full rounded-full bg-primary-container px-xl py-4 font-sans font-bold text-on-primary-container transition-all hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
 								disabled={isResponseLocked}
 								onClick={() => void submitPoll()}
 								type="button">
@@ -478,9 +489,11 @@ export default function PublicPoll() {
 						poll={poll}
 					/>
 					<a
-						className="flex items-center justify-center gap-xs rounded-full bg-primary-container px-lg py-sm font-label-lg text-on-primary-container"
+						className="flex items-center justify-center gap-xs rounded-full bg-primary-container px-lg py-sm font-sans text-on-primary-container"
 						href={`/public/poll/${slug}/results`}>
-						<span className="material-symbols-outlined text-[18px]">bar_chart</span>
+						<span className="material-symbols-outlined text-[18px]">
+							bar_chart
+						</span>
 						View results
 					</a>
 				</aside>
@@ -515,10 +528,10 @@ function SummaryMetric({
 				{icon}
 			</span>
 			<div className="min-w-0">
-				<p className="font-label-md text-label-md text-on-surface-variant">
+				<p className="font-sans text-label-md text-on-surface-variant">
 					{label}
 				</p>
-				<p className="break-words font-label-lg text-label-lg text-on-surface">
+				<p className="break-words font-sans text-label-lg text-on-surface">
 					{value}
 				</p>
 			</div>
@@ -541,13 +554,13 @@ function UserDetailsCard({
 				<span className="material-symbols-outlined text-primary">
 					account_circle
 				</span>
-				<h2 className="font-title-lg text-title-lg text-primary">
+				<h2 className="font-serif text-title-lg text-primary">
 					Participant
 				</h2>
 			</div>
 
 			{isCheckingAuth ? (
-				<p className="font-body-md text-on-surface-variant">
+				<p className="font-sans text-on-surface-variant">
 					Checking session...
 				</p>
 			) : currentUser ? (
@@ -560,15 +573,15 @@ function UserDetailsCard({
 								src={currentUser.picture}
 							/>
 						) : (
-							<div className="grid h-12 w-12 place-items-center rounded-full bg-primary-container font-label-lg text-on-primary-container">
+							<div className="grid h-12 w-12 place-items-center rounded-full bg-primary-container font-sans text-on-primary-container">
 								{getInitials(currentUser)}
 							</div>
 						)}
 						<div className="min-w-0">
-							<p className="truncate font-label-lg text-label-lg text-on-surface">
+							<p className="truncate font-sans text-label-lg text-on-surface">
 								{currentUser.name}
 							</p>
-							<p className="truncate font-body-md text-body-md text-on-surface-variant">
+							<p className="truncate font-sans text-body-md text-on-surface-variant">
 								{currentUser.email}
 							</p>
 						</div>
@@ -577,21 +590,21 @@ function UserDetailsCard({
 						<span className="material-symbols-outlined text-[18px]">
 							verified_user
 						</span>
-						<span className="font-label-md text-label-md">
+						<span className="font-sans text-label-md">
 							Authenticated session
 						</span>
 					</div>
 				</div>
 			) : (
 				<div className="space-y-md">
-					<p className="font-body-md text-on-surface-variant">
+					<p className="font-sans text-on-surface-variant">
 						{requiresAuthentication
 							? "Sign in to submit a verified response."
 							: "You can respond without signing in."}
 					</p>
 					{!requiresAuthentication ? (
 						<button
-							className="rounded-full bg-surface-container-low px-4 py-2 font-label-lg text-primary transition-colors hover:bg-surface-container-high"
+							className="rounded-full bg-surface-container-low px-4 py-2 font-sans text-primary transition-colors hover:bg-surface-container-high"
 							onClick={authService.login}
 							type="button">
 							Sign in
@@ -622,10 +635,10 @@ function ResponseProgressCard({
 	return (
 		<section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg shadow-sm">
 			<div className="mb-md flex items-center justify-between gap-md">
-				<h2 className="font-title-lg text-title-lg text-primary">
+				<h2 className="font-serif text-title-lg text-primary">
 					Response status
 				</h2>
-				<span className="font-label-md text-label-md text-on-surface-variant">
+				<span className="font-sans text-label-md text-on-surface-variant">
 					{answeredCount}/{questionCount}
 				</span>
 			</div>
@@ -635,7 +648,7 @@ function ResponseProgressCard({
 					style={{ width: `${progressPercent}%` }}
 				/>
 			</div>
-			<p className="font-body-md text-body-md text-on-surface-variant">
+			<p className="font-sans text-body-md text-on-surface-variant">
 				{isSubmitted
 					? "Your response has been captured."
 					: `${requiredCount} required question${requiredCount === 1 ? "" : "s"} in this poll.`}
@@ -659,16 +672,19 @@ function LivePollCard({
 		}))
 		.sort((left, right) => right.count - left.count)[0];
 	const topRegion = Object.entries(metrics?.regions ?? {})
-		.map(([region, count]) => ({ region: formatAudienceRegion(region), count }))
+		.map(([region, count]) => ({
+			region: formatAudienceRegion(region),
+			count,
+		}))
 		.sort((left, right) => right.count - left.count)[0];
 
 	return (
 		<section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg shadow-sm">
 			<div className="mb-md flex items-center justify-between gap-md">
-				<h2 className="font-title-lg text-title-lg text-primary">
+				<h2 className="font-serif text-title-lg text-primary">
 					Live activity
 				</h2>
-				<span className="flex items-center gap-xs rounded-full bg-primary-fixed px-3 py-1 font-label-md text-label-md text-on-primary-fixed">
+				<span className="flex items-center gap-xs rounded-full bg-primary-fixed px-3 py-1 font-sans text-label-md text-on-primary-fixed">
 					<span className="h-2 w-2 rounded-full bg-primary" />
 					Live
 				</span>
@@ -686,13 +702,19 @@ function LivePollCard({
 				/>
 			</div>
 			{topOption ? (
-				<p className="mt-md rounded-lg bg-surface-container-low px-md py-sm font-body-md text-body-md text-on-surface-variant">
-					Top option: <span className="font-label-lg text-primary">{topOption.optionText}</span>
+				<p className="mt-md rounded-lg bg-surface-container-low px-md py-sm font-sans text-body-md text-on-surface-variant">
+					Top option:{" "}
+					<span className="font-sans text-primary">
+						{topOption.optionText}
+					</span>
 				</p>
 			) : null}
 			{topRegion ? (
-				<p className="mt-sm rounded-lg bg-surface-container-low px-md py-sm font-body-md text-body-md text-on-surface-variant">
-					Top region: <span className="font-label-lg text-primary">{topRegion.region}</span>
+				<p className="mt-sm rounded-lg bg-surface-container-low px-md py-sm font-sans text-body-md text-on-surface-variant">
+					Top region:{" "}
+					<span className="font-sans text-primary">
+						{topRegion.region}
+					</span>
 				</p>
 			) : null}
 		</section>
@@ -709,7 +731,7 @@ function AuthRequiredDialog({ isOpen }: { isOpen: boolean }) {
 			tone="auth">
 			<div className="space-y-md">
 				<button
-					className="flex w-full items-center justify-center gap-md rounded-full border border-outline-variant bg-surface-container-lowest px-lg py-4 font-label-lg text-on-surface transition-all hover:bg-surface-container-highest active:scale-[0.98]"
+					className="flex w-full items-center justify-center gap-md rounded-full border border-outline-variant bg-surface-container-lowest px-lg py-4 font-sans text-on-surface transition-all hover:bg-surface-container-highest active:scale-[0.98]"
 					onClick={authService.login}
 					type="button">
 					<svg
@@ -736,7 +758,7 @@ function AuthRequiredDialog({ isOpen }: { isOpen: boolean }) {
 				</button>
 
 				<button
-					className="flex w-full items-center justify-center gap-md rounded-full bg-primary-container px-lg py-4 font-label-lg text-on-primary-container shadow-sm transition-all hover:bg-opacity-90 active:scale-[0.98]"
+					className="flex w-full items-center justify-center gap-md rounded-full bg-primary-container px-lg py-4 font-sans text-on-primary-container shadow-sm transition-all hover:bg-opacity-90 active:scale-[0.98]"
 					onClick={authService.login}
 					type="button">
 					<span className="material-symbols-outlined">mail</span>
@@ -746,10 +768,10 @@ function AuthRequiredDialog({ isOpen }: { isOpen: boolean }) {
 
 			<div className="mt-lg border-t border-outline-variant pt-lg text-center">
 				<button
-					className="font-label-lg text-primary transition-all hover:underline"
+					className="font-sans text-primary transition-all hover:underline"
 					onClick={authService.register}
 					type="button">
-					Create a PulseBoard account
+					Create a Votyx account
 				</button>
 			</div>
 		</Dialog>
@@ -767,7 +789,7 @@ function ResponseSubmittedDialog({
 		<Dialog
 			actions={
 				<button
-					className="rounded-full bg-primary-container px-6 py-3 font-label-lg font-bold text-on-primary-container transition-colors hover:bg-primary"
+					className="rounded-full bg-primary-container px-6 py-3 font-sans font-bold text-on-primary-container transition-colors hover:bg-primary"
 					onClick={onClose}
 					type="button">
 					Back to poll

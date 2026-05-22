@@ -13,7 +13,7 @@ export function createApp() {
 	app.use(cookieParser());
 
 	app.get("/", (_req: Request, res: Response) => {
-		return ok(res, "PulseBoard API running...");
+		return ok(res, "Votyx API running...");
 	});
 
 	app.get("/health", (_req: Request, res: Response) => {
@@ -24,7 +24,7 @@ export function createApp() {
 			uptime: process.uptime(),
 		};
 
-		return ok(res, "PulseBoard server is healthy", healthData);
+		return ok(res, "Votyx server is healthy", healthData);
 	});
 
 	app.use("/api/v1", v1Router);
