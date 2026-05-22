@@ -43,7 +43,7 @@ const setCookie = (
 	res.cookie(name, value, {
 		httpOnly: true,
 		secure: shouldUseSecureCookies(req),
-		sameSite: "lax",
+		sameSite: "none",
 		maxAge: maxAge * 1000,
 		path: "/",
 	});
@@ -68,7 +68,7 @@ const clearCookie = (res: Response, req: Request, name: string) => {
 	res.clearCookie(name, {
 		httpOnly: true,
 		secure: shouldUseSecureCookies(req),
-		sameSite: "lax",
+		sameSite: "none",
 		path: "/",
 	});
 };
