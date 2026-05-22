@@ -7,7 +7,13 @@ import { v1Router } from "./routes/v1.routes";
 
 export function createApp() {
 	const app = express();
-
+    app.set("trust proxy",1);
+	app.usr(
+		cors({
+			origin: "https://pulse-board-poll-system.vercel.app",
+			credentials: true,
+		})
+	);
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: false }));
 	app.use(cookieParser());
