@@ -340,12 +340,6 @@ export function PollListView({
 						<p className="mb-lg font-sans text-on-surface-variant">
 							{emptyDescription}
 						</p>
-						<button
-							className="rounded-full bg-primary-container px-xl py-3 font-sans font-bold text-on-primary-container"
-							onClick={() => void navigate({ to: "/create" })}
-							type="button">
-							Create Poll
-						</button>
 					</div>
 				) : null}
 
@@ -510,18 +504,6 @@ export function PollListView({
 							</div>
 						</article>
 					))}
-
-					{/* <button
-						className="flex min-h-64 flex-col items-center justify-center rounded-xl bg-primary p-xl text-center text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
-						
-						type="button">
-						<span className="material-symbols-outlined mb-md text-[48px]">
-							add
-						</span>
-						<span className="font-serif text-headline-md font-Literata">
-							New Poll
-						</span>
-					</button> */}
 
 					<div className="col-span-1 md:col-span-2 lg:col-span-1 bg-primary text-on-primary p-xl rounded-xl flex flex-col justify-center items-center text-center">
 						<span className="material-symbols-outlined text-[48px] mb-md">

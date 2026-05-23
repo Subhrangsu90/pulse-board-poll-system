@@ -14,10 +14,7 @@ import { PollRequirementsStep } from "./create-poll/PollRequirementsStep";
 import { QuestionsConfigurationStep } from "./create-poll/QuestionsConfigurationStep";
 import { ReviewPublishStep } from "./create-poll/ReviewPublishStep";
 import { createPollSteps } from "./create-poll/steps";
-import type {
-	PollRequirements,
-	StepId,
-} from "./create-poll/types";
+import type { PollRequirements, StepId } from "./create-poll/types";
 
 function getEditPollIdFromPath() {
 	const match = window.location.pathname.match(/\/polls\/([^/]+)\/edit$/);
@@ -40,17 +37,24 @@ export default function CreatePoll() {
 	const isEditMode = Boolean(editPollId);
 
 	const wizard = useAppStore((state) => state.pollCreation);
-	const setRequirements = useAppStore((state) => state.setPollCreationRequirements);
+	const setRequirements = useAppStore(
+		(state) => state.setPollCreationRequirements,
+	);
 	const setQuestions = useAppStore((state) => state.setPollCreationQuestions);
 	const setCurrentStep = useAppStore((state) => state.setPollCreationStep);
 	const setCreatedPollId = useAppStore((state) => state.setCreatedPollId);
 	const setCreatedPollSlug = useAppStore((state) => state.setCreatedPollSlug);
 	const resetPollCreation = useAppStore((state) => state.resetPollCreation);
 
-	const { requirements, questions, currentStep, createdPollId, createdPollSlug } = wizard;
+	const {
+		requirements,
+		questions,
+		currentStep,
+		createdPollId,
+		createdPollSlug,
+	} = wizard;
 
 	const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoadingEditPoll, setIsLoadingEditPoll] = useState(isEditMode);
 
@@ -73,15 +77,12 @@ export default function CreatePoll() {
 
 	const showError = useCallback(
 		(message: string) => {
-			setError(message);
 			toast.error(message);
 		},
 		[toast],
 	);
 
 	const validateRequirements = () => {
-		setError(null);
-
 		if (!requirements.title.trim()) {
 			showError("Title is required.");
 			return false;
@@ -192,7 +193,6 @@ export default function CreatePoll() {
 		}
 
 		setIsSubmitting(true);
-		setError(null);
 
 		try {
 			const poll = await pollService.updatePoll(createdPollId, {
@@ -236,7 +236,6 @@ export default function CreatePoll() {
 				return;
 			}
 
-			setError(null);
 			setCurrentStep(3);
 		}
 	};
@@ -246,7 +245,6 @@ export default function CreatePoll() {
 		question: AddQuestionPayload,
 	) => {
 		setIsSubmitting(true);
-		setError(null);
 
 		try {
 			const savedQuestion = await pollService.updateQuestion(questionId, {
@@ -297,7 +295,6 @@ export default function CreatePoll() {
 		if (!window.confirm("Delete this question?")) return;
 
 		setIsSubmitting(true);
-		setError(null);
 
 		try {
 			await pollService.deleteQuestion(questionId);
@@ -324,7 +321,6 @@ export default function CreatePoll() {
 		if (!pollId) return false;
 
 		setIsSubmitting(true);
-		setError(null);
 
 		try {
 			const savedQuestion = await pollService.addQuestionToPoll(pollId, {
@@ -372,7 +368,6 @@ export default function CreatePoll() {
 		}
 
 		setIsSubmitting(true);
-		setError(null);
 
 		try {
 			const publishedPoll = await pollService.publishPoll(createdPollId);
@@ -477,12 +472,6 @@ export default function CreatePoll() {
 							questions={questions}
 							requirements={requirements}
 						/>
-					) : null}
-
-					{error ? (
-						<p className="rounded-md bg-error-container px-md py-sm font-sans text-body-md text-on-error-container">
-							{error}
-						</p>
 					) : null}
 
 					<div className="flex flex-col items-center gap-md pt-xl md:flex-row">

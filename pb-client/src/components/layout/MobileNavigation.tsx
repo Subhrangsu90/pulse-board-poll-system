@@ -13,10 +13,12 @@ export function MobileNavigation() {
 							"bg-primary-container text-on-primary-container rounded-full scale-95",
 					}}
 					aria-label={item.label}
-					className="grid size-10 place-items-center text-on-surface-variant transition-all"
+					className="grid size-10 place-items-center text-on-primary-variant transition-all"
 					title={item.label}
 					to={item.to}>
-					<span className="material-symbols-outlined">{item.icon}</span>
+					<span className="material-symbols-outlined">
+						{item.icon}
+					</span>
 				</Link>
 			))}
 		</nav>

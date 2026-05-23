@@ -22,7 +22,10 @@ export default function Landing() {
 		return (
 			<div className="grid min-h-screen place-items-center bg-background px-margin text-on-surface">
 				<div className="flex flex-col items-center gap-md text-center">
-					<BrandLogo className="h-16 w-16" showText={false} />
+					<BrandLogo
+						className="h-16 w-16"
+						showText={false}
+					/>
 					<div>
 						<p className="font-serif text-headline-md text-primary">
 							Votyx
@@ -42,7 +45,10 @@ export default function Landing() {
 				id="top"
 				className="sticky top-0 z-50 w-full border-b border-outline-variant bg-surface/95 backdrop-blur-md">
 				<div className="mx-auto flex w-full max-w-7xl items-center justify-between px-margin py-md">
-					<BrandLogo className="h-8 w-8" textClassName="font-serif text-title-lg font-bold text-primary" />
+					<BrandLogo
+						className="h-8 w-8"
+						textClassName="font-serif text-title-lg font-bold text-primary"
+					/>
 					<nav className="hidden md:flex items-center gap-xl">
 						<a
 							className="text-primary font-bold border-b-2 border-primary pb-1 font-sans text-label-lg"
@@ -337,7 +343,10 @@ export default function Landing() {
 			<footer className="w-full  border-t border-outline-variant bg-surface-container-highest dark:bg-surface/95">
 				<div className="w-full px-margin py-xl flex flex-col md:flex-row justify-between items-center gap-md max-w-7xl mx-auto">
 					<div className="flex flex-col items-center md:items-start gap-sm">
-						<BrandLogo className="h-6 w-6" textClassName="font-serif text-title-lg text-primary font-bold" />
+						<BrandLogo
+							className="h-6 w-6"
+							textClassName="font-serif text-title-lg text-primary font-bold"
+						/>
 						<p className="font-sans text-body-md text-on-surface-variant">
 							Architecting Digital Mindfulness.
 						</p>
