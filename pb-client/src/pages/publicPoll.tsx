@@ -285,7 +285,9 @@ export default function PublicPoll() {
 							<Skeleton className="h-4 w-5/6 mt-2" />
 							<div className="grid grid-cols-1 gap-sm border-t border-outline-variant pt-lg mt-4 md:grid-cols-3">
 								{[...Array(3)].map((_, i) => (
-									<div key={i} className="flex gap-sm p-md rounded-lg bg-surface-container-low">
+									<div
+										key={i}
+										className="flex gap-sm p-md rounded-lg bg-surface-container-low">
 										<Skeleton className="h-5 w-5 rounded-full" />
 										<div className="flex-grow space-y-xs">
 											<Skeleton className="h-3 w-12" />
@@ -298,7 +300,9 @@ export default function PublicPoll() {
 
 						<section className="space-y-lg">
 							{[...Array(2)].map((_, i) => (
-								<article className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-md" key={i}>
+								<article
+									className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-md"
+									key={i}>
 									<div className="flex gap-xs">
 										<Skeleton className="h-6 w-24 rounded-full" />
 										<Skeleton className="h-6 w-32 rounded-full" />
@@ -306,7 +310,9 @@ export default function PublicPoll() {
 									<Skeleton className="h-6 w-2/3" />
 									<div className="space-y-sm">
 										{[...Array(3)].map((_, j) => (
-											<div key={j} className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-between px-md">
+											<div
+												key={j}
+												className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-between px-md">
 												<Skeleton className="h-4 w-32" />
 												<Skeleton className="h-5 w-5 rounded-full" />
 											</div>
@@ -319,7 +325,9 @@ export default function PublicPoll() {
 
 					<aside className="space-y-lg">
 						{[...Array(3)].map((_, i) => (
-							<section key={i} className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-sm">
+							<section
+								key={i}
+								className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-sm">
 								<div className="flex gap-sm">
 									<Skeleton className="h-6 w-6 rounded-full" />
 									<Skeleton className="h-6 w-24" />
@@ -437,7 +445,9 @@ export default function PublicPoll() {
 					{isCheckingAuth && requiresAuthentication ? (
 						<section className="space-y-lg">
 							{[...Array(2)].map((_, i) => (
-								<article className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-md" key={i}>
+								<article
+									className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-md"
+									key={i}>
 									<div className="flex gap-xs">
 										<Skeleton className="h-6 w-24 rounded-full" />
 										<Skeleton className="h-6 w-32 rounded-full" />
@@ -445,7 +455,9 @@ export default function PublicPoll() {
 									<Skeleton className="h-6 w-2/3" />
 									<div className="space-y-sm">
 										{[...Array(3)].map((_, j) => (
-											<div key={j} className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-between px-md">
+											<div
+												key={j}
+												className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-between px-md">
 												<Skeleton className="h-4 w-32" />
 												<Skeleton className="h-5 w-5 rounded-full" />
 											</div>
@@ -832,24 +844,7 @@ function AuthRequiredDialog({ isOpen }: { isOpen: boolean }) {
 							fill="#EA4335"
 						/>
 					</svg>
-					Continue with Google
-				</button>
-
-				<button
-					className="flex w-full items-center justify-center gap-md rounded-full bg-primary-container px-lg py-4 font-sans text-on-primary-container shadow-sm transition-all hover:bg-opacity-90 active:scale-[0.98]"
-					onClick={authService.login}
-					type="button">
-					<span className="material-symbols-outlined">mail</span>
-					Sign in with Email
-				</button>
-			</div>
-
-			<div className="mt-lg border-t border-outline-variant pt-lg text-center">
-				<button
-					className="font-sans text-primary transition-all hover:underline"
-					onClick={authService.register}
-					type="button">
-					Create a Votyx account
+					Login with BrewAuth
 				</button>
 			</div>
 		</Dialog>

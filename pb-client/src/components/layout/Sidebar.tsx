@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { authService, type CurrentUser } from "../../services/api/authService";
 import { primaryNavigation } from "./navigation";
 import { BrandLogo } from "../BrandLogo";
@@ -15,6 +15,20 @@ const fallbackAvatar =
 
 export function Sidebar({ user, isExpanded, onToggleExpanded }: SidebarProps) {
 	const [isBrandHovered, setIsBrandHovered] = useState(false);
+
+	useEffect(() => {
+		const mediaQuery = window.matchMedia("(max-width: 1024px)");
+		const handleChange = (e: MediaQueryListEvent) => {
+			if (e.matches && isExpanded) {
+				onToggleExpanded();
+			}
+		};
+		mediaQuery.addEventListener("change", handleChange);
+		if (mediaQuery.matches && isExpanded) {
+			onToggleExpanded();
+		}
+		return () => mediaQuery.removeEventListener("change", handleChange);
+	}, [isExpanded, onToggleExpanded]);
 
 	return (
 		<aside

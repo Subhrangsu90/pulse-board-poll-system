@@ -17,7 +17,12 @@ export function Header({ user }: HeaderProps) {
 	return (
 		<header className="sticky top-0 z-50 flex w-full items-center justify-between border-b border-outline-variant bg-surface px-margin py-sm">
 			<div className="flex items-center gap-md">
-				<BrandLogo className="h-8 w-8" textClassName="font-serif text-headline-lg font-bold text-primary" />
+				<BrandLogo
+					className="h-8 w-8"
+					textClassName="font-serif text-headline-lg font-bold text-primary"
+					showLogo={false}
+					showBadge={true}
+				/>
 			</div>
 			<div className="flex items-center gap-sm">
 				<span className="hidden font-sans text-label-lg text-on-surface-variant md:block">
