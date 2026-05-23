@@ -11,6 +11,19 @@ export const STATE_COOKIE_NAME = "pb_auth_state";
 export const AUTH_COOKIE_NAME = "pb_auth_token";
 export const RETURN_TO_COOKIE_NAME = "pb_auth_return_to";
 const DEFAULT_RETURN_TO = "/dashboard";
+const CURRENT_USER_CACHE_TTL_MS = 60_000;
+
+type CurrentUserCacheEntry = {
+	expiresAt: number;
+	user: CurrentUser;
+};
+
+const currentUserCache = new Map<string, CurrentUserCacheEntry>();
+const pendingCurrentUserRequests = new Map<string, Promise<CurrentUser | null>>();
+
+function hashToken(token: string) {
+	return crypto.createHash("sha256").update(token).digest("hex");
+}
 
 const getReturnToFromRequest = (req: Request) => {
 	const { returnTo } = req.query;
@@ -27,7 +40,12 @@ const sanitizeReturnTo = (returnTo: string) => {
 		return DEFAULT_RETURN_TO;
 	}
 
-	if (/[\u0000-\u001f\u007f]/.test(returnTo)) {
+	if (
+		[...returnTo].some((char) => {
+			const codePoint = char.codePointAt(0) ?? 0;
+			return codePoint <= 31 || codePoint === 127;
+		})
+	) {
 		return DEFAULT_RETURN_TO;
 	}
 
@@ -205,17 +223,50 @@ const fetchCurrentUser = async (req: Request): Promise<CurrentUser | null> => {
 	const token = parseCookies(req)[AUTH_COOKIE_NAME];
 	if (!token) return null;
 
-	const userInfo = await fetchUserInfo(token);
-	if (!userInfo) return null;
+	const cacheKey = hashToken(token);
+	const cachedUser = currentUserCache.get(cacheKey);
 
-	const savedUser = await upsertUserFromOidc(userInfo);
+	if (cachedUser && cachedUser.expiresAt > Date.now()) {
+		return cachedUser.user;
+	}
 
-	return {
-		id: savedUser.id,
-		email: savedUser.email,
-		name: savedUser.name,
-		picture: savedUser.picture,
-	};
+	if (cachedUser) {
+		currentUserCache.delete(cacheKey);
+	}
+
+	const pendingRequest = pendingCurrentUserRequests.get(cacheKey);
+
+	if (pendingRequest) {
+		return pendingRequest;
+	}
+
+	const request = (async () => {
+		const userInfo = await fetchUserInfo(token);
+		if (!userInfo) return null;
+
+		const savedUser = await upsertUserFromOidc(userInfo);
+		const user = {
+			id: savedUser.id,
+			email: savedUser.email,
+			name: savedUser.name,
+			picture: savedUser.picture,
+		};
+
+		currentUserCache.set(cacheKey, {
+			expiresAt: Date.now() + CURRENT_USER_CACHE_TTL_MS,
+			user,
+		});
+
+		return user;
+	})();
+
+	pendingCurrentUserRequests.set(cacheKey, request);
+
+	try {
+		return await request;
+	} finally {
+		pendingCurrentUserRequests.delete(cacheKey);
+	}
 };
 
 export {

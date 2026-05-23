@@ -6,10 +6,11 @@ import { ok } from "./common/utils/api.response";
 import { errorMiddleware } from "./common/middleware/error.middleware";
 import { notFound } from "./common/utils/api.error";
 import { v1Router } from "./routes/v1.routes";
+import { requestTiming } from "./common/middleware/request-timing.middleware";
 
 export function createApp() {
 	const app = express();
-    app.set("trust proxy",1);
+	app.set("trust proxy", 1);
 	app.use(
 		cors({
 			origin: "https://pulse-board-poll-system.vercel.app",
@@ -19,6 +20,7 @@ export function createApp() {
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: false }));
 	app.use(cookieParser());
+	app.use(requestTiming);
 
 	app.get("/", (_req: Request, res: Response) => {
 		return ok(res, "Votyx API running...");
