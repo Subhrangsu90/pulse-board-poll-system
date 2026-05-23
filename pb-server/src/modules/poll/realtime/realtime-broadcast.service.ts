@@ -38,19 +38,23 @@ export async function publishVoteEvents(
 }
 
 export async function publishPollAnalytics(pollId: string, analytics: Record<string, unknown>) {
-	const [activeViewers, regions] = await Promise.all([
+	const [activeViewers, rawRegions] = await Promise.all([
 		redis.scard(viewerSetKey(pollId)),
 		redis.hgetall(viewerRegionKey(pollId)),
 	]);
+
+	const aggregatedRegions = Object.values(rawRegions as Record<string, string>).reduce<Record<string, number>>((acc, region) => {
+		const safeRegion = region || "Unknown";
+		acc[safeRegion] = (acc[safeRegion] || 0) + 1;
+		return acc;
+	}, {});
 
 	await publisher.publish(
 		POLL_ANALYTICS_CHANNEL,
 		JSON.stringify({
 			pollId,
 			activeViewers,
-			regions: Object.fromEntries(
-				Object.entries(regions).map(([region, count]) => [region, Number(count)])
-			),
+			regions: aggregatedRegions,
 			...analytics,
 		})
 	);

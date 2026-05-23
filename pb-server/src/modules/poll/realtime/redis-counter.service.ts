@@ -83,15 +83,18 @@ export async function getPollLiveMetrics(pollId: string, optionIds: string[]) {
 		liveCounts[optionId] = Number(results?.[index]?.[1] ?? 0);
 	});
 
+	const rawRegions = (results?.[optionIds.length + 2]?.[1] as Record<string, string>) ?? {};
+	const aggregatedRegions = Object.values(rawRegions).reduce<Record<string, number>>((acc, region) => {
+		const safeRegion = region || "Unknown";
+		acc[safeRegion] = (acc[safeRegion] || 0) + 1;
+		return acc;
+	}, {});
+
 	return {
 		pollId,
 		liveCounts,
 		totalVotes: Number(results?.[optionIds.length]?.[1] ?? 0),
 		activeViewers: Number(results?.[optionIds.length + 1]?.[1] ?? 0),
-		regions: Object.fromEntries(
-			Object.entries((results?.[optionIds.length + 2]?.[1] as Record<string, string>) ?? {}).map(
-				([region, count]) => [region, Number(count)]
-			)
-		),
+		regions: aggregatedRegions,
 	};
 }
