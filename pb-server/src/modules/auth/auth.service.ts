@@ -2,6 +2,8 @@ import crypto from "node:crypto";
 import { sql } from "drizzle-orm";
 import type { Request } from "express";
 import { db } from "../../common/config/db";
+import { redis } from "../../common/config/redis";
+import { logger } from "../../common/utils/logger";
 import { getIssuer, getRedirectUri, parseCookies } from "../../common/utils/auth.utils";
 import { env } from "../../config/env";
 import type { TokenResponse } from "./model/auth.types";
@@ -11,6 +13,14 @@ export const STATE_COOKIE_NAME = "pb_auth_state";
 export const AUTH_COOKIE_NAME = "pb_auth_token";
 export const RETURN_TO_COOKIE_NAME = "pb_auth_return_to";
 const DEFAULT_RETURN_TO = "/dashboard";
+const REDIS_USER_CACHE_PREFIX = "auth:user:";
+const REDIS_USER_CACHE_TTL_SECONDS = 60;
+
+const pendingCurrentUserRequests = new Map<string, Promise<CurrentUser | null>>();
+
+function hashToken(token: string) {
+	return crypto.createHash("sha256").update(token).digest("hex");
+}
 
 const getReturnToFromRequest = (req: Request) => {
 	const { returnTo } = req.query;
@@ -27,7 +37,12 @@ const sanitizeReturnTo = (returnTo: string) => {
 		return DEFAULT_RETURN_TO;
 	}
 
-	if (/[\u0000-\u001f\u007f]/.test(returnTo)) {
+	if (
+		[...returnTo].some((char) => {
+			const codePoint = char.codePointAt(0) ?? 0;
+			return codePoint <= 31 || codePoint === 127;
+		})
+	) {
 		return DEFAULT_RETURN_TO;
 	}
 
@@ -114,6 +129,12 @@ const exchangeCodeForToken = async (req: Request, code: string): Promise<TokenRe
 async function revokeToken(req: Request) {
 	const token = parseCookies(req)[AUTH_COOKIE_NAME];
 	if (!token) return;
+
+	const cacheKey = hashToken(token);
+	const redisKey = `${REDIS_USER_CACHE_PREFIX}${cacheKey}`;
+	await redis.del(redisKey).catch((err) => {
+		logger.error(err);
+	});
 
 	await fetch(`${getIssuer()}/oauth/revoke`, {
 		method: "POST",
@@ -205,17 +226,52 @@ const fetchCurrentUser = async (req: Request): Promise<CurrentUser | null> => {
 	const token = parseCookies(req)[AUTH_COOKIE_NAME];
 	if (!token) return null;
 
-	const userInfo = await fetchUserInfo(token);
-	if (!userInfo) return null;
+	const cacheKey = hashToken(token);
+	const redisKey = `${REDIS_USER_CACHE_PREFIX}${cacheKey}`;
 
-	const savedUser = await upsertUserFromOidc(userInfo);
+	try {
+		const cachedUserJson = await redis.get(redisKey);
+		if (cachedUserJson) {
+			return JSON.parse(cachedUserJson) as CurrentUser;
+		}
+	} catch (err) {
+		logger.error(err);
+	}
 
-	return {
-		id: savedUser.id,
-		email: savedUser.email,
-		name: savedUser.name,
-		picture: savedUser.picture,
-	};
+	const pendingRequest = pendingCurrentUserRequests.get(cacheKey);
+
+	if (pendingRequest) {
+		return pendingRequest;
+	}
+
+	const request = (async () => {
+		const userInfo = await fetchUserInfo(token);
+		if (!userInfo) return null;
+
+		const savedUser = await upsertUserFromOidc(userInfo);
+		const user = {
+			id: savedUser.id,
+			email: savedUser.email,
+			name: savedUser.name,
+			picture: savedUser.picture,
+		};
+
+		try {
+			await redis.setex(redisKey, REDIS_USER_CACHE_TTL_SECONDS, JSON.stringify(user));
+		} catch (err) {
+			logger.error(err);
+		}
+
+		return user;
+	})();
+
+	pendingCurrentUserRequests.set(cacheKey, request);
+
+	try {
+		return await request;
+	} finally {
+		pendingCurrentUserRequests.delete(cacheKey);
+	}
 };
 
 export {

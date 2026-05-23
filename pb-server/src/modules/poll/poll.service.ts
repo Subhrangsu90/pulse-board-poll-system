@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, count, desc, eq, inArray, lte } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, lte, sql } from "drizzle-orm";
 import { db } from "../../common/config/db";
+import { redis } from "../../common/config/redis";
 import { badRequest, conflict, internal, notFound, unauthorized } from "../../common/utils/api.error";
+import { logger } from "../../common/utils/logger";
 import type { CreatePollInput, UpdatePollInput } from "./dto/polls.dto";
 import type { QuestionInput } from "./dto/questions.dto";
 import type { SubmitPollResponseInput } from "./dto/responses.dto";
@@ -134,25 +136,21 @@ const getPollById = async (pollId: string, creatorId: string) => {
 		throw notFound("Poll not found.");
 	}
 
-	const pollQuestions = await db
-		.select()
-		.from(questions)
-		.where(eq(questions.pollId, poll.id))
-		.orderBy(asc(questions.orderIndex));
+	const [pollQuestions, pollOptionsResult] = await Promise.all([
+		db
+			.select()
+			.from(questions)
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(questions.orderIndex)),
+		db
+			.select()
+			.from(options)
+			.innerJoin(questions, eq(options.questionId, questions.id))
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(options.orderIndex)),
+	]);
 
-	if (pollQuestions.length === 0) {
-		return {
-			...poll,
-			questions: [],
-		};
-	}
-
-	const questionIds = pollQuestions.map((question) => question.id);
-	const pollOptions = await db
-		.select()
-		.from(options)
-		.where(inArray(options.questionId, questionIds))
-		.orderBy(asc(options.orderIndex));
+	const pollOptions = pollOptionsResult.map((r) => r.options);
 
 	return {
 		...poll,
@@ -164,7 +162,7 @@ const getPollById = async (pollId: string, creatorId: string) => {
 };
 
 const getPollResults = async (pollId: string, creatorId: string) => {
-	await expireDuePolls();
+	expireDuePolls().catch((err) => logger.error(err));
 
 	const [poll] = await db
 		.select()
@@ -176,48 +174,111 @@ const getPollResults = async (pollId: string, creatorId: string) => {
 		throw notFound("Poll not found.");
 	}
 
-	const pollQuestions = await db
-		.select()
-		.from(questions)
-		.where(eq(questions.pollId, poll.id))
-		.orderBy(asc(questions.orderIndex));
+	const [pollQuestions, pollOptions] = await Promise.all([
+		db
+			.select()
+			.from(questions)
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(questions.orderIndex)),
+		db
+			.select({
+				id: options.id,
+				questionId: options.questionId,
+				optionText: options.optionText,
+				orderIndex: options.orderIndex,
+			})
+			.from(options)
+			.innerJoin(questions, eq(options.questionId, questions.id))
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(options.orderIndex)),
+	]);
 
-	const questionIds = pollQuestions.map((question) => question.id);
-	const pollOptions =
-		questionIds.length > 0
-			? await db
-					.select()
-					.from(options)
-					.where(inArray(options.questionId, questionIds))
-					.orderBy(asc(options.orderIndex))
-			: [];
 	const optionIds = pollOptions.map((option) => option.id);
-	const liveMetrics = await getPollLiveMetrics(poll.id, optionIds);
 
-	const dbResponses = await db
-		.select()
-		.from(responses)
-		.where(eq(responses.pollId, poll.id))
-		.orderBy(desc(responses.submittedAt));
-	const responseIds = dbResponses.map((response) => response.id);
-	const dbAnswers =
-		responseIds.length > 0
-			? await db.select().from(answers).where(inArray(answers.responseId, responseIds))
-			: [];
+	const [
+		liveMetrics,
+		optionSelectionCountsDb,
+		questionResponseCountsDb,
+		dbResponsesCount,
+		lastResponse,
+		recentResponses,
+	] = await Promise.all([
+		optionIds.length > 0 ? getPollLiveMetrics(poll.id, optionIds) : Promise.resolve({
+			pollId: poll.id,
+			liveCounts: {} as Record<string, number>,
+			totalVotes: 0,
+			activeViewers: 0,
+			regions: {} as Record<string, number>,
+		}),
+		db
+			.select({
+				optionId: answers.optionId,
+				count: count(answers.id),
+			})
+			.from(answers)
+			.innerJoin(responses, eq(answers.responseId, responses.id))
+			.where(eq(responses.pollId, poll.id))
+			.groupBy(answers.optionId),
+		db
+			.select({
+				questionId: answers.questionId,
+				count: sql<number>`count(distinct ${answers.responseId})`,
+			})
+			.from(answers)
+			.innerJoin(responses, eq(answers.responseId, responses.id))
+			.where(eq(responses.pollId, poll.id))
+			.groupBy(answers.questionId),
+		db
+			.select({
+				total: count(responses.id),
+				anonymous: count(sql`case when ${responses.isAnonymous} = true then 1 end`),
+				authenticated: count(sql`case when ${responses.isAnonymous} = false then 1 end`),
+			})
+			.from(responses)
+			.where(eq(responses.pollId, poll.id)),
+		db
+			.select({
+				submittedAt: responses.submittedAt,
+			})
+			.from(responses)
+			.where(eq(responses.pollId, poll.id))
+			.orderBy(desc(responses.submittedAt))
+			.limit(1),
+		db
+			.select({
+				id: responses.id,
+				submittedAt: responses.submittedAt,
+				isAnonymous: responses.isAnonymous,
+			})
+			.from(responses)
+			.where(eq(responses.pollId, poll.id))
+			.orderBy(desc(responses.submittedAt))
+			.limit(10),
+	]);
 
-	const optionSelectionCounts = new Map<string, number>();
-	const responseIdsByQuestion = new Map<string, Set<string>>();
+	const recentResponseIds = recentResponses.map((r) => r.id);
+	const recentAnswersCountDb = recentResponseIds.length > 0
+		? await db
+				.select({
+					responseId: answers.responseId,
+					count: count(answers.id),
+				})
+				.from(answers)
+				.where(inArray(answers.responseId, recentResponseIds))
+				.groupBy(answers.responseId)
+		: [];
 
-	for (const answer of dbAnswers) {
-		optionSelectionCounts.set(
-			answer.optionId,
-			(optionSelectionCounts.get(answer.optionId) ?? 0) + 1
-		);
+	const recentAnswersCountMap = new Map<string, number>(
+		recentAnswersCountDb.map((row) => [row.responseId, Number(row.count ?? 0)])
+	);
 
-		const responseSet = responseIdsByQuestion.get(answer.questionId) ?? new Set<string>();
-		responseSet.add(answer.responseId);
-		responseIdsByQuestion.set(answer.questionId, responseSet);
-	}
+	const optionSelectionCounts = new Map<string, number>(
+		optionSelectionCountsDb.map((row) => [row.optionId, Number(row.count ?? 0)])
+	);
+
+	const questionResponseCounts = new Map<string, number>(
+		questionResponseCountsDb.map((row) => [row.questionId, Number(row.count ?? 0)])
+	);
 
 	const questionsWithResults = pollQuestions.map((question) => {
 		const questionOptions = pollOptions.filter((option) => option.questionId === question.id);
@@ -242,7 +303,7 @@ const getPollResults = async (pollId: string, creatorId: string) => {
 			questionType: question.questionType,
 			isRequired: question.isRequired,
 			orderIndex: question.orderIndex,
-			responseCount: Math.max(responseIdsByQuestion.get(question.id)?.size ?? 0, liveMetrics.totalVotes),
+			responseCount: Math.max(questionResponseCounts.get(question.id) ?? 0, liveMetrics.totalVotes),
 			totalSelections,
 			options: optionsWithCounts.map((option) => ({
 				...option,
@@ -250,6 +311,10 @@ const getPollResults = async (pollId: string, creatorId: string) => {
 			})),
 		};
 	});
+
+	const totalSelectionsAllQuestions = questionsWithResults.reduce((total, q) => total + q.totalSelections, 0);
+	const summaryStats = dbResponsesCount[0] ?? { total: 0, anonymous: 0, authenticated: 0 };
+	const lastResponseTime = lastResponse[0]?.submittedAt ?? null;
 
 	return {
 		poll: {
@@ -265,27 +330,27 @@ const getPollResults = async (pollId: string, creatorId: string) => {
 			updatedAt: poll.updatedAt,
 		},
 		summary: {
-			totalResponses: Math.max(dbResponses.length, liveMetrics.totalVotes),
-			totalAnswerSelections: Math.max(dbAnswers.length, questionsWithResults.reduce((total, question) => total + question.totalSelections, 0)),
-			anonymousResponses: dbResponses.filter((response) => response.isAnonymous).length,
-			authenticatedResponses: dbResponses.filter((response) => !response.isAnonymous).length,
-			lastSubmittedAt: dbResponses[0]?.submittedAt ?? null,
+			totalResponses: Math.max(Number(summaryStats.total ?? 0), liveMetrics.totalVotes),
+			totalAnswerSelections: totalSelectionsAllQuestions,
+			anonymousResponses: Number(summaryStats.anonymous ?? 0),
+			authenticatedResponses: Number(summaryStats.authenticated ?? 0),
+			lastSubmittedAt: lastResponseTime,
 			activeViewers: liveMetrics.activeViewers,
 			regions: liveMetrics.regions,
 		},
 		questions: questionsWithResults,
-		recentResponses: dbResponses.slice(0, 10).map((response) => ({
+		recentResponses: recentResponses.map((response) => ({
 			id: response.id,
 			submittedAt: response.submittedAt,
 			isAnonymous: response.isAnonymous,
-			answerCount: dbAnswers.filter((answer) => answer.responseId === response.id).length,
+			answerCount: recentAnswersCountMap.get(response.id) ?? 0,
 			status: "recorded" as const,
 		})),
 	};
 };
 
 const getPublicPollBySlug = async (publicSlug: string) => {
-	await expireDuePolls();
+	expireDuePolls().catch((err) => logger.error(err));
 
 	const [poll] = await db
 		.select()
@@ -303,21 +368,24 @@ const getPublicPollBySlug = async (publicSlug: string) => {
 		throw notFound("Poll not found or not published.");
 	}
 
-	const pollQuestions = await db
-		.select()
-		.from(questions)
-		.where(eq(questions.pollId, poll.id))
-		.orderBy(asc(questions.orderIndex));
-
-	const questionIds = pollQuestions.map((question) => question.id);
-	const pollOptions =
-		questionIds.length > 0
-			? await db
-					.select()
-					.from(options)
-					.where(inArray(options.questionId, questionIds))
-					.orderBy(asc(options.orderIndex))
-			: [];
+	const [pollQuestions, pollOptions] = await Promise.all([
+		db
+			.select()
+			.from(questions)
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(questions.orderIndex)),
+		db
+			.select({
+				id: options.id,
+				questionId: options.questionId,
+				optionText: options.optionText,
+				orderIndex: options.orderIndex,
+			})
+			.from(options)
+			.innerJoin(questions, eq(options.questionId, questions.id))
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(options.orderIndex)),
+	]);
 
 	return {
 		id: poll.id,
@@ -345,7 +413,7 @@ const getPublicPollBySlug = async (publicSlug: string) => {
 };
 
 const getPublicPollResultsBySlug = async (publicSlug: string) => {
-	await expireDuePolls();
+	expireDuePolls().catch((err) => logger.error(err));
 
 	const [poll] = await db
 		.select({ id: polls.id, creatorId: polls.creatorId, status: polls.status, isPublished: polls.isPublished })
@@ -391,7 +459,7 @@ const hasPersistedVoteSession = async (input: {
 const submitPublicPollResponse = async (
 	input: SubmitPollResponseInput & { deviceFingerprint: string }
 ): Promise<VoteAcceptedResult> => {
-	await expireDuePolls();
+	expireDuePolls().catch((err) => logger.error(err));
 
 	const [poll] = await db
 		.select()
@@ -420,21 +488,30 @@ const submitPublicPollResponse = async (
 		throw badRequest("Anonymous response session is required.");
 	}
 
-	const pollQuestions = await db
-		.select()
-		.from(questions)
-		.where(eq(questions.pollId, poll.id))
-		.orderBy(asc(questions.orderIndex));
+	const [pollQuestions, pollOptionsResult, alreadyPersisted] = await Promise.all([
+		db
+			.select()
+			.from(questions)
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(questions.orderIndex)),
+		db
+			.select()
+			.from(options)
+			.innerJoin(questions, eq(options.questionId, questions.id))
+			.where(eq(questions.pollId, poll.id)),
+		hasPersistedVoteSession({
+			pollId: poll.id,
+			isAnonymous,
+			userId: input.userId,
+			anonymousIdentifier: input.anonymousIdentifier,
+		}),
+	]);
 
 	if (pollQuestions.length === 0) {
 		throw badRequest("This poll has no questions.");
 	}
 
-	const questionIds = pollQuestions.map((question) => question.id);
-	const pollOptions = await db
-		.select()
-		.from(options)
-		.where(inArray(options.questionId, questionIds));
+	const pollOptions = pollOptionsResult.map((r) => r.options);
 
 	const questionsById = new Map(pollQuestions.map((question) => [question.id, question]));
 	const optionsByQuestionId = new Map<string, Set<string>>();
@@ -474,13 +551,6 @@ const submitPublicPollResponse = async (
 			}
 		}
 	}
-
-	const alreadyPersisted = await hasPersistedVoteSession({
-		pollId: poll.id,
-		isAnonymous,
-		userId: input.userId,
-		anonymousIdentifier: input.anonymousIdentifier,
-	});
 
 	if (alreadyPersisted) {
 		throw conflict("This participant has already submitted a response.");
@@ -539,30 +609,24 @@ const submitPublicPollResponse = async (
 };
 
 const getPublicPollLiveMetrics = async (publicSlug: string) => {
-	const [poll] = await db
-		.select({ id: polls.id })
+	const pollRows = await db
+		.select({
+			pollId: polls.id,
+			optionId: options.id,
+		})
 		.from(polls)
-		.where(eq(polls.publicSlug, publicSlug))
-		.limit(1);
+		.leftJoin(questions, eq(questions.pollId, polls.id))
+		.leftJoin(options, eq(options.questionId, questions.id))
+		.where(eq(polls.publicSlug, publicSlug));
 
-	if (!poll) {
+	if (pollRows.length === 0 || !pollRows[0]?.pollId) {
 		throw notFound("Poll not found.");
 	}
 
-	const pollQuestions = await db
-		.select({ id: questions.id })
-		.from(questions)
-		.where(eq(questions.pollId, poll.id));
-	const questionIds = pollQuestions.map((question) => question.id);
-	const pollOptions =
-		questionIds.length > 0
-			? await db.select({ id: options.id }).from(options).where(inArray(options.questionId, questionIds))
-			: [];
+	const pollId = pollRows[0].pollId;
+	const optionIds = pollRows.map((row) => row.optionId).filter((id): id is string => id !== null);
 
-	return getPollLiveMetrics(
-		poll.id,
-		pollOptions.map((option) => option.id)
-	);
+	return getPollLiveMetrics(pollId, optionIds);
 };
 
 const updateQuestion = async (questionId: string, creatorId: string, input: QuestionInput) => {
@@ -747,7 +811,25 @@ const completePoll = async (pollId: string, creatorId: string) => {
 	return completedPoll;
 };
 
+const REDIS_EXPIRE_LOCK_KEY = "poll:expire:lock";
+const EXPIRE_LOCK_TTL_SECONDS = 30;
+
 const expireDuePolls = async () => {
+	try {
+		const acquired = await redis.set(
+			REDIS_EXPIRE_LOCK_KEY,
+			"locked",
+			"EX",
+			EXPIRE_LOCK_TTL_SECONDS,
+			"NX"
+		);
+		if (!acquired) {
+			return [];
+		}
+	} catch (err) {
+		logger.error(err);
+	}
+
 	return db
 		.update(polls)
 		.set({
@@ -760,7 +842,7 @@ const expireDuePolls = async () => {
 };
 
 const getAllPolls = async (creatorId: string) => {
-	await expireDuePolls();
+	expireDuePolls().catch((err) => logger.error(err));
 
 	return db
 		.select()
@@ -770,7 +852,7 @@ const getAllPolls = async (creatorId: string) => {
 };
 
 const getPollsSummary = async (creatorId: string) => {
-	await expireDuePolls();
+	expireDuePolls().catch((err) => logger.error(err));
 
 	const [responseCount] = await db
 		.select({ totalResponses: count(responses.id) })

@@ -1,32 +1,32 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useToast } from "../components/toastContext";
 import { getApiErrorMessage } from "../services/api/apiService";
 import { pollService, type Poll, type PollsSummary } from "../services/api/pollService";
 
 export default function Dashboard() {
 	const toast = useToast();
-	const [polls, setPolls] = useState<Poll[]>([]);
-	const [summary, setSummary] = useState<PollsSummary | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
+
+	const { data: polls = [], isLoading: isLoadingPolls, error: pollsError } = useQuery<Poll[]>({
+		queryKey: ["polls"],
+		queryFn: () => pollService.getAllPolls(),
+	});
+
+	const { data: summary = null, isLoading: isLoadingSummary, error: summaryError } = useQuery<PollsSummary | null>({
+		queryKey: ["pollsSummary"],
+		queryFn: () => pollService.getPollsSummary(),
+	});
+
+	const isLoading = isLoadingPolls || isLoadingSummary;
 
 	useEffect(() => {
-		void (async () => {
-			try {
-				const [loadedPolls, loadedSummary] = await Promise.all([
-					pollService.getAllPolls(),
-					pollService.getPollsSummary(),
-				]);
-				setPolls(loadedPolls);
-				setSummary(loadedSummary);
-			} catch (error) {
-				console.error("Unable to fetch dashboard data:", error);
-				toast.error(getApiErrorMessage(error, "Unable to fetch dashboard data."));
-			} finally {
-				setIsLoading(false);
-			}
-		})();
-	}, [toast]);
+		const error = pollsError || summaryError;
+		if (error) {
+			console.error("Unable to fetch dashboard data:", error);
+			toast.error(getApiErrorMessage(error, "Unable to fetch dashboard data."));
+		}
+	}, [pollsError, summaryError, toast]);
 
 	const activePolls = polls.filter((poll) => poll.status === "active");
 	const draftPolls = polls.filter((poll) => poll.status === "draft");
