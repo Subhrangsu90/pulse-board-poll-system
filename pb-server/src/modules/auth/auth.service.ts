@@ -144,8 +144,8 @@ async function revokeToken(req: Request) {
 		body: JSON.stringify({
 			token,
 			token_type_hint: "refresh_token",
-			client_id: process.env.OIDC_CLIENT_ID,
-			client_secret: process.env.OIDC_CLIENT_SECRET,
+			client_id: env.oidcClientId,
+			client_secret: env.oidcClientSecret,
 		}),
 	}).catch(() => {});
 }

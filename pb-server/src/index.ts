@@ -7,6 +7,7 @@ import { logger } from "./common/utils/logger";
 import { env } from "./config/env";
 import { closeVoteQueues } from "./modules/poll/realtime/vote.queue";
 import { createVoteWorker, closeVoteWorker } from "./modules/poll/realtime/vote.worker";
+import { startPollExpiryScheduler, closePollExpiryScheduler } from "./modules/poll/realtime/poll-expiry.scheduler";
 
 async function main() {
 	try {
@@ -15,6 +16,8 @@ async function main() {
 
 		const worker = createVoteWorker();
 		logger.info("Vote worker is running.");
+
+		await startPollExpiryScheduler();
 
 		server.listen(env.port, () => {
 			logger.info(`Server is running on http://localhost:${env.port}`);
@@ -25,6 +28,7 @@ async function main() {
 			server.close(async () => {
 				await closeSocketServer();
 				await closeVoteWorker(worker);
+				await closePollExpiryScheduler();
 				await closeVoteQueues();
 				await closeRedisConnections();
 				process.exit(0);

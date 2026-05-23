@@ -7,13 +7,14 @@ import { errorMiddleware } from "./common/middleware/error.middleware";
 import { notFound } from "./common/utils/api.error";
 import { v1Router } from "./routes/v1.routes";
 import { requestTiming } from "./common/middleware/request-timing.middleware";
+import { env } from "./config/env";
 
 export function createApp() {
 	const app = express();
 	app.set("trust proxy", 1);
 	app.use(
 		cors({
-			origin: "https://votyx.brewcodex.online",
+			origin: env.clientUrl,
 			credentials: true,
 		})
 	);
