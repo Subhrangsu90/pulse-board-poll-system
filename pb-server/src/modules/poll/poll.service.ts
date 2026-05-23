@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, inArray, lte } from "drizzle-orm";
 import { db } from "../../common/config/db";
 import { badRequest, conflict, internal, notFound, unauthorized } from "../../common/utils/api.error";
+import { logger } from "../../common/utils/logger";
 import type { CreatePollInput, UpdatePollInput } from "./dto/polls.dto";
 import type { QuestionInput } from "./dto/questions.dto";
 import type { SubmitPollResponseInput } from "./dto/responses.dto";
@@ -164,7 +165,7 @@ const getPollById = async (pollId: string, creatorId: string) => {
 };
 
 const getPollResults = async (pollId: string, creatorId: string) => {
-	await expireDuePolls();
+	expireDuePolls().catch((err) => logger.error(err));
 
 	const [poll] = await db
 		.select()
@@ -176,34 +177,39 @@ const getPollResults = async (pollId: string, creatorId: string) => {
 		throw notFound("Poll not found.");
 	}
 
-	const pollQuestions = await db
-		.select()
-		.from(questions)
-		.where(eq(questions.pollId, poll.id))
-		.orderBy(asc(questions.orderIndex));
+	const [pollQuestions, pollOptions, dbResponses] = await Promise.all([
+		db
+			.select()
+			.from(questions)
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(questions.orderIndex)),
+		db
+			.select({
+				id: options.id,
+				questionId: options.questionId,
+				optionText: options.optionText,
+				orderIndex: options.orderIndex,
+			})
+			.from(options)
+			.innerJoin(questions, eq(options.questionId, questions.id))
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(options.orderIndex)),
+		db
+			.select()
+			.from(responses)
+			.where(eq(responses.pollId, poll.id))
+			.orderBy(desc(responses.submittedAt)),
+	]);
 
-	const questionIds = pollQuestions.map((question) => question.id);
-	const pollOptions =
-		questionIds.length > 0
-			? await db
-					.select()
-					.from(options)
-					.where(inArray(options.questionId, questionIds))
-					.orderBy(asc(options.orderIndex))
-			: [];
 	const optionIds = pollOptions.map((option) => option.id);
-	const liveMetrics = await getPollLiveMetrics(poll.id, optionIds);
-
-	const dbResponses = await db
-		.select()
-		.from(responses)
-		.where(eq(responses.pollId, poll.id))
-		.orderBy(desc(responses.submittedAt));
 	const responseIds = dbResponses.map((response) => response.id);
-	const dbAnswers =
+
+	const [liveMetrics, dbAnswers] = await Promise.all([
+		getPollLiveMetrics(poll.id, optionIds),
 		responseIds.length > 0
-			? await db.select().from(answers).where(inArray(answers.responseId, responseIds))
-			: [];
+			? db.select().from(answers).where(inArray(answers.responseId, responseIds))
+			: Promise.resolve([]),
+	]);
 
 	const optionSelectionCounts = new Map<string, number>();
 	const responseIdsByQuestion = new Map<string, Set<string>>();
@@ -285,7 +291,7 @@ const getPollResults = async (pollId: string, creatorId: string) => {
 };
 
 const getPublicPollBySlug = async (publicSlug: string) => {
-	await expireDuePolls();
+	expireDuePolls().catch((err) => logger.error(err));
 
 	const [poll] = await db
 		.select()
@@ -303,21 +309,24 @@ const getPublicPollBySlug = async (publicSlug: string) => {
 		throw notFound("Poll not found or not published.");
 	}
 
-	const pollQuestions = await db
-		.select()
-		.from(questions)
-		.where(eq(questions.pollId, poll.id))
-		.orderBy(asc(questions.orderIndex));
-
-	const questionIds = pollQuestions.map((question) => question.id);
-	const pollOptions =
-		questionIds.length > 0
-			? await db
-					.select()
-					.from(options)
-					.where(inArray(options.questionId, questionIds))
-					.orderBy(asc(options.orderIndex))
-			: [];
+	const [pollQuestions, pollOptions] = await Promise.all([
+		db
+			.select()
+			.from(questions)
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(questions.orderIndex)),
+		db
+			.select({
+				id: options.id,
+				questionId: options.questionId,
+				optionText: options.optionText,
+				orderIndex: options.orderIndex,
+			})
+			.from(options)
+			.innerJoin(questions, eq(options.questionId, questions.id))
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(options.orderIndex)),
+	]);
 
 	return {
 		id: poll.id,
@@ -345,7 +354,7 @@ const getPublicPollBySlug = async (publicSlug: string) => {
 };
 
 const getPublicPollResultsBySlug = async (publicSlug: string) => {
-	await expireDuePolls();
+	expireDuePolls().catch((err) => logger.error(err));
 
 	const [poll] = await db
 		.select({ id: polls.id, creatorId: polls.creatorId, status: polls.status, isPublished: polls.isPublished })
@@ -391,7 +400,7 @@ const hasPersistedVoteSession = async (input: {
 const submitPublicPollResponse = async (
 	input: SubmitPollResponseInput & { deviceFingerprint: string }
 ): Promise<VoteAcceptedResult> => {
-	await expireDuePolls();
+	expireDuePolls().catch((err) => logger.error(err));
 
 	const [poll] = await db
 		.select()
@@ -539,30 +548,24 @@ const submitPublicPollResponse = async (
 };
 
 const getPublicPollLiveMetrics = async (publicSlug: string) => {
-	const [poll] = await db
-		.select({ id: polls.id })
+	const pollRows = await db
+		.select({
+			pollId: polls.id,
+			optionId: options.id,
+		})
 		.from(polls)
-		.where(eq(polls.publicSlug, publicSlug))
-		.limit(1);
+		.leftJoin(questions, eq(questions.pollId, polls.id))
+		.leftJoin(options, eq(options.questionId, questions.id))
+		.where(eq(polls.publicSlug, publicSlug));
 
-	if (!poll) {
+	if (pollRows.length === 0 || !pollRows[0]?.pollId) {
 		throw notFound("Poll not found.");
 	}
 
-	const pollQuestions = await db
-		.select({ id: questions.id })
-		.from(questions)
-		.where(eq(questions.pollId, poll.id));
-	const questionIds = pollQuestions.map((question) => question.id);
-	const pollOptions =
-		questionIds.length > 0
-			? await db.select({ id: options.id }).from(options).where(inArray(options.questionId, questionIds))
-			: [];
+	const pollId = pollRows[0].pollId;
+	const optionIds = pollRows.map((row) => row.optionId).filter((id): id is string => id !== null);
 
-	return getPollLiveMetrics(
-		poll.id,
-		pollOptions.map((option) => option.id)
-	);
+	return getPollLiveMetrics(pollId, optionIds);
 };
 
 const updateQuestion = async (questionId: string, creatorId: string, input: QuestionInput) => {
@@ -760,7 +763,7 @@ const expireDuePolls = async () => {
 };
 
 const getAllPolls = async (creatorId: string) => {
-	await expireDuePolls();
+	expireDuePolls().catch((err) => logger.error(err));
 
 	return db
 		.select()
@@ -770,7 +773,7 @@ const getAllPolls = async (creatorId: string) => {
 };
 
 const getPollsSummary = async (creatorId: string) => {
-	await expireDuePolls();
+	expireDuePolls().catch((err) => logger.error(err));
 
 	const [responseCount] = await db
 		.select({ totalResponses: count(responses.id) })
