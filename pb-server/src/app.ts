@@ -9,10 +9,10 @@ import { v1Router } from "./routes/v1.routes";
 
 export function createApp() {
 	const app = express();
-    app.set("trust proxy",1);
+	app.set("trust proxy", 1);
 	app.use(
 		cors({
-			origin: "https://pulse-board-poll-system.vercel.app",
+			origin: "https://votyx.brewcodex.online",
 			credentials: true,
 		})
 	);
