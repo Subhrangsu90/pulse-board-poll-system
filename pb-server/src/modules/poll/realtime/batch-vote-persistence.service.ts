@@ -1,7 +1,11 @@
+import { eq, sql } from "drizzle-orm";
 import { db } from "../../../common/config/db";
 import { logger } from "../../../common/utils/logger";
 import { env } from "../../../config/env";
 import { answers } from "../model/answers.model";
+import { options } from "../model/options.model";
+import { polls } from "../model/polls.model";
+import { questions } from "../model/questions.model";
 import { responses } from "../model/responses.model";
 import { responseSessions } from "../model/responseSessions.model";
 import type { VoteQueuePayload } from "./vote.types";
@@ -153,6 +157,85 @@ async function persistVoteBatch(batch: VoteQueuePayload[]) {
 
 		if (answerRows.length > 0) {
 			await tx.insert(answers).values(answerRows).onConflictDoNothing();
+		}
+
+		// Update pre-aggregated counters for polls, questions, and options
+		const pollIncrements = new Map<
+			string,
+			{ total: number; anonymous: number; authenticated: number; lastResponseAt: Date }
+		>();
+		const questionIncrements = new Map<string, number>();
+		const optionIncrements = new Map<string, number>();
+
+		for (const payload of acceptedVotes) {
+			const pollId = payload.pollId;
+			const isAnon = payload.isAnonymous;
+			const submittedAt = new Date(payload.submittedAt);
+
+			let pollStat = pollIncrements.get(pollId);
+			if (!pollStat) {
+				pollStat = { total: 0, anonymous: 0, authenticated: 0, lastResponseAt: submittedAt };
+				pollIncrements.set(pollId, pollStat);
+			}
+			pollStat.total += 1;
+			if (isAnon) {
+				pollStat.anonymous += 1;
+			} else {
+				pollStat.authenticated += 1;
+			}
+			if (submittedAt > pollStat.lastResponseAt) {
+				pollStat.lastResponseAt = submittedAt;
+			}
+
+			for (const answer of payload.answers) {
+				const questionId = answer.questionId;
+				questionIncrements.set(questionId, (questionIncrements.get(questionId) ?? 0) + 1);
+				for (const optionId of answer.optionIds) {
+					optionIncrements.set(optionId, (optionIncrements.get(optionId) ?? 0) + 1);
+				}
+			}
+		}
+
+		const updatePromises: Promise<any>[] = [];
+
+		for (const [pollId, stats] of pollIncrements.entries()) {
+			updatePromises.push(
+				tx
+					.update(polls)
+					.set({
+						totalResponses: sql`${polls.totalResponses} + ${stats.total}`,
+						anonymousResponses: sql`${polls.anonymousResponses} + ${stats.anonymous}`,
+						authenticatedResponses: sql`${polls.authenticatedResponses} + ${stats.authenticated}`,
+						lastResponseAt: sql`CASE WHEN ${polls.lastResponseAt} IS NULL OR ${polls.lastResponseAt} < ${stats.lastResponseAt} THEN ${stats.lastResponseAt} ELSE ${polls.lastResponseAt} END`,
+					})
+					.where(eq(polls.id, pollId))
+			);
+		}
+
+		for (const [questionId, inc] of questionIncrements.entries()) {
+			updatePromises.push(
+				tx
+					.update(questions)
+					.set({
+						responseCount: sql`${questions.responseCount} + ${inc}`,
+					})
+					.where(eq(questions.id, questionId))
+			);
+		}
+
+		for (const [optionId, inc] of optionIncrements.entries()) {
+			updatePromises.push(
+				tx
+					.update(options)
+					.set({
+						selectionCount: sql`${options.selectionCount} + ${inc}`,
+					})
+					.where(eq(options.id, optionId))
+			);
+		}
+
+		if (updatePromises.length > 0) {
+			await Promise.all(updatePromises);
 		}
 	});
 }

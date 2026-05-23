@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
 	boolean,
 	index,
+	integer,
 	pgEnum,
 	pgTable,
 	text,
@@ -33,6 +34,10 @@ export const polls = pgTable(
 		isPublished: boolean("is_published").default(false),
 		status: pollStatusEnum("status").default("draft"),
 		publicSlug: varchar("public_slug", { length: 255 }).unique(),
+		totalResponses: integer("total_responses").default(0).notNull(),
+		anonymousResponses: integer("anonymous_responses").default(0).notNull(),
+		authenticatedResponses: integer("authenticated_responses").default(0).notNull(),
+		lastResponseAt: timestamp("last_response_at"),
 		createdAt: timestamp("created_at").defaultNow(),
 		updatedAt: timestamp("updated_at").defaultNow(),
 	},

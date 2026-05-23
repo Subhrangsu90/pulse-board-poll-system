@@ -10,6 +10,7 @@ export const options = pgTable(
 			.references(() => questions.id, { onDelete: "cascade" }),
 		optionText: varchar("option_text", { length: 255 }).notNull(),
 		orderIndex: integer("order_index").notNull(),
+		selectionCount: integer("selection_count").default(0).notNull(),
 		createdAt: timestamp("created_at").defaultNow(),
 		updatedAt: timestamp("updated_at").defaultNow(),
 	},

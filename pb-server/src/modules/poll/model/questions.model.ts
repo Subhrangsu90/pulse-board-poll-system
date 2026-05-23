@@ -14,6 +14,7 @@ export const questions = pgTable(
 		questionType: questionTypeEnum("question_type").default("single_choice"),
 		isRequired: boolean("is_required").default(true),
 		orderIndex: integer("order_index").notNull(),
+		responseCount: integer("response_count").default(0).notNull(),
 		createdAt: timestamp("created_at").defaultNow(),
 		updatedAt: timestamp("updated_at").defaultNow(),
 	},

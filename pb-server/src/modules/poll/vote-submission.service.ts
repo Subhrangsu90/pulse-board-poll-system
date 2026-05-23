@@ -7,15 +7,9 @@ import { options } from "./model/options.model";
 import { polls } from "./model/polls.model";
 import { questions } from "./model/questions.model";
 import { responseSessions } from "./model/responseSessions.model";
-import {
-	claimVoteOnce,
-	releaseVoteClaim,
-} from "./realtime/duplicate-vote.service";
+import { claimVoteOnce, releaseVoteClaim } from "./realtime/duplicate-vote.service";
 import { enqueueVote } from "./realtime/vote.queue";
-import {
-	incrementVoteCounters,
-	rollbackVoteCounters,
-} from "./realtime/redis-counter.service";
+import { incrementVoteCounters, rollbackVoteCounters } from "./realtime/redis-counter.service";
 import { publishPollAnalytics, publishVoteEvents } from "./realtime/realtime-broadcast.service";
 import { recordVoteAnalytics } from "./realtime/vote-analytics.service";
 import type { VoteAcceptedResult } from "./realtime/vote.types";
@@ -137,13 +131,13 @@ export const submitPublicPollResponse = async (
 	}
 
 	if (alreadyPersisted) {
-		throw conflict("This participant has already submitted a response.");
+		throw conflict("You already submitted a response.");
 	}
 
 	const didClaimVote = await claimVoteOnce(poll.id, input.deviceFingerprint);
 
 	if (!didClaimVote) {
-		throw conflict("This participant has already submitted a response.");
+		throw conflict("You already submitted a response.");
 	}
 
 	const selectedOptionIds = Array.from(submittedAnswers.values()).flat();

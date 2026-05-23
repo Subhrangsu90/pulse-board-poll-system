@@ -32,6 +32,10 @@ CREATE TABLE "polls" (
 	"is_published" boolean DEFAULT false,
 	"status" "poll_status" DEFAULT 'draft',
 	"public_slug" varchar(255),
+	"total_responses" integer DEFAULT 0 NOT NULL,
+	"anonymous_responses" integer DEFAULT 0 NOT NULL,
+	"authenticated_responses" integer DEFAULT 0 NOT NULL,
+	"last_response_at" timestamp,
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now(),
 	CONSTRAINT "polls_public_slug_unique" UNIQUE("public_slug")
@@ -44,6 +48,7 @@ CREATE TABLE "questions" (
 	"question_type" "question_type" DEFAULT 'single_choice',
 	"is_required" boolean DEFAULT true,
 	"order_index" integer NOT NULL,
+	"response_count" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now()
 );
@@ -53,6 +58,7 @@ CREATE TABLE "options" (
 	"question_id" uuid NOT NULL,
 	"option_text" varchar(255) NOT NULL,
 	"order_index" integer NOT NULL,
+	"selection_count" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now()
 );
