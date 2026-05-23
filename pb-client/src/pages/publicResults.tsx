@@ -10,6 +10,7 @@ import {
 	type PollVoteEvent,
 } from "../services/realtime/pollSocket";
 import { Skeleton } from "../components/Skeleton";
+import { BrandLogo } from "../components/BrandLogo";
 
 function getSlugFromPath() {
 	const match = window.location.pathname.match(
@@ -157,7 +158,9 @@ export default function PublicResults() {
 
 					<div className="grid grid-cols-1 gap-gutter md:grid-cols-3">
 						{[...Array(3)].map((_, i) => (
-							<div key={i} className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-xs">
+							<div
+								key={i}
+								className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-xs">
 								<Skeleton className="h-4 w-20" />
 								<Skeleton className="h-8 w-16" />
 							</div>
@@ -171,11 +174,15 @@ export default function PublicResults() {
 
 					<section className="space-y-lg">
 						{[...Array(2)].map((_, i) => (
-							<article className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-md" key={i}>
+							<article
+								className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-md"
+								key={i}>
 								<Skeleton className="h-6 w-1/2" />
 								<div className="space-y-sm">
 									{[...Array(3)].map((_, j) => (
-										<div key={j} className="space-y-xs">
+										<div
+											key={j}
+											className="space-y-xs">
 											<div className="flex justify-between">
 												<Skeleton className="h-4 w-32" />
 												<Skeleton className="h-4 w-16" />
@@ -192,11 +199,11 @@ export default function PublicResults() {
 		);
 	}
 
-	if (error || !results) {
+	if (!results) {
 		return (
 			<main className="min-h-screen bg-surface p-xl text-on-surface">
 				<p className="mx-auto max-w-3xl rounded-xl border border-error-container bg-error-container p-xl text-on-error-container">
-					{error ?? "Poll results are not available."}
+					{"Poll results are not available."}
 				</p>
 			</main>
 		);
@@ -212,9 +219,10 @@ export default function PublicResults() {
 								? "Live results"
 								: "Final results"}
 						</span>
-						<span className="rounded-full bg-surface-container-high px-3 py-1 font-sans text-label-md text-on-surface-variant">
-							{results.summary.activeViewers ?? 0} viewing
-						</span>
+						<BrandLogo
+							className="h-16 w-16"
+							showText={true}
+						/>
 					</div>
 					<h1 className="font-serif text-display-md text-primary">
 						{results.poll.title}

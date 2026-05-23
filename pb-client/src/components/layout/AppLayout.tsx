@@ -32,21 +32,18 @@ export function AppLayout() {
 	if (isLoading) {
 		return (
 			<div className="grid min-h-screen place-items-center bg-background px-margin text-on-surface">
-				<div className="flex w-full max-w-sm flex-col items-center gap-lg text-center">
+				<div className="flex w-full flex-col items-center gap-lg text-center">
 					<BrandLogo
 						className="h-16 w-16"
 						showText={false}
 					/>
-					<div className="space-y-xs">
+					<div>
 						<p className="font-serif text-headline-md text-primary">
 							Votyx
 						</p>
-						<p className="font-sans text-body-lg text-on-surface-variant ">
+						<p className="font-sans text-body-md text-on-surface-variant">
 							Preparing your workspace
 						</p>
-					</div>
-					<div className="h-0.5 w-full overflow-hidden rounded-full bg-surface-container-high">
-						<div className="h-full w-1/2 animate-pulse rounded-full bg-primary" />
 					</div>
 				</div>
 			</div>

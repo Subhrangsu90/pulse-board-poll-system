@@ -17,6 +17,7 @@ import {
 	type PollAnalyticsEvent,
 	type PollVoteEvent,
 } from "../services/realtime/pollSocket";
+import { BrandLogo } from "../components/BrandLogo";
 
 type Answers = Record<string, string | string[]>;
 
@@ -341,17 +342,15 @@ export default function PublicPoll() {
 			</main>
 		);
 	}
-
-	if (error && !poll) {
+	if (!poll) {
 		return (
 			<main className="min-h-screen bg-surface p-xl text-on-surface">
 				<p className="mx-auto max-w-3xl rounded-xl border border-error-container bg-error-container p-xl text-on-error-container">
-					{error}
+					{"This poll is not available."}
 				</p>
 			</main>
 		);
 	}
-
 	if (!poll) return null;
 
 	const requiresAuthentication = poll.responseMode === "authenticated";
@@ -371,14 +370,10 @@ export default function PublicPoll() {
 		<main className="min-h-screen bg-surface text-on-surface">
 			<div className="border-b border-outline-variant bg-surface-container-lowest/90">
 				<div className="mx-auto flex max-w-6xl items-center justify-between px-md py-md">
-					<div className="flex items-center gap-sm">
-						<span className="material-symbols-outlined text-primary">
-							analytics
-						</span>
-						<span className="font-serif text-title-lg font-bold text-primary">
-							Votyx
-						</span>
-					</div>
+					<BrandLogo
+						className="h-16 w-16"
+						showText={true}
+					/>
 					<span className="rounded-full bg-surface-container-high px-3 py-1 font-sans text-label-md text-on-surface-variant">
 						Public poll
 					</span>

@@ -1,11 +1,10 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { authService } from "../services/api/authService";
 import { BrandLogo } from "../components/BrandLogo";
 
 export default function Landing() {
 	const navigate = useNavigate();
-	const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
 	useEffect(() => {
 		authService
@@ -13,31 +12,8 @@ export default function Landing() {
 			.then(() => {
 				void navigate({ to: "/dashboard", replace: true });
 			})
-			.catch(() => {
-				setIsCheckingAuth(false);
-			});
+			.catch(() => {});
 	}, [navigate]);
-
-	if (isCheckingAuth) {
-		return (
-			<div className="grid min-h-screen place-items-center bg-background px-margin text-on-surface">
-				<div className="flex flex-col items-center gap-md text-center">
-					<BrandLogo
-						className="h-16 w-16"
-						showText={false}
-					/>
-					<div>
-						<p className="font-serif text-headline-md text-primary">
-							Votyx
-						</p>
-						<p className="font-sans text-body-md text-on-surface-variant">
-							Checking your session
-						</p>
-					</div>
-				</div>
-			</div>
-		);
-	}
 
 	return (
 		<>
