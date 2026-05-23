@@ -214,15 +214,15 @@ export default function PublicResults() {
 			<section className="mx-auto max-w-6xl space-y-gutter px-md py-xl">
 				<header className="border-b border-outline-variant pb-lg">
 					<div className="mb-sm flex flex-wrap items-center gap-sm">
+						<BrandLogo
+							className="h-8 w-8"
+							showText={true}
+						/>
 						<span className="rounded-full bg-primary-fixed px-3 py-1 font-sans text-label-md text-on-primary-fixed">
 							{results.poll.status === "active"
 								? "Live results"
 								: "Final results"}
 						</span>
-						<BrandLogo
-							className="h-16 w-16"
-							showText={true}
-						/>
 					</div>
 					<h1 className="font-serif text-display-md text-primary">
 						{results.poll.title}
