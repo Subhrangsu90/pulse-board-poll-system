@@ -504,9 +504,9 @@ export function PollListView({
 						</article>
 					))}
 
-					<button
+					{/* <button
 						className="flex min-h-64 flex-col items-center justify-center rounded-xl bg-primary p-xl text-center text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
-						onClick={() => void navigate({ to: "/create" })}
+						
 						type="button">
 						<span className="material-symbols-outlined mb-md text-[48px]">
 							add
@@ -514,7 +514,29 @@ export function PollListView({
 						<span className="font-serif text-headline-md font-Literata">
 							New Poll
 						</span>
-					</button>
+					</button> */}
+
+					<div className="col-span-1 md:col-span-2 lg:col-span-1 bg-primary text-on-primary p-xl rounded-xl flex flex-col justify-center items-center text-center">
+						<span className="material-symbols-outlined text-[48px] mb-md">
+							auto_awesome
+						</span>
+						<h3 className="font-headline-md text-headline-md font-Literata mb-sm">
+							Engage Your Focus
+						</h3>
+						<p className="font-body-md opacity-90 mb-lg">
+							Your audience is waiting for your next thoughtful
+							inquiry.
+						</p>
+						<button
+							className="bg-primary-fixed text-on-primary-fixed font-label-lg px-xl py-3 rounded-full hover:bg-primary-fixed-dim transition-colors flex items-center gap-sm"
+							onClick={() => void navigate({ to: "/create" })}
+							type="button">
+							<span className="material-symbols-outlined">
+								add
+							</span>
+							New Poll
+						</button>
+					</div>
 				</div>
 			</div>
 

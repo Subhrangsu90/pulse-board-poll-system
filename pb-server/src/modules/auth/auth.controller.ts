@@ -10,7 +10,7 @@ import * as preferencesService from "./preferences.service";
 
 const loginUser = async (req: Request, res: Response) => {
 	if (!env.oidcClientId || !env.oidcClientSecret) {
-		return internal("OIDC client credentials are not configured.");
+		throw internal("OIDC client credentials are not configured.");
 	}
 
 	const { loginUrl, state } = authService.createLoginUrl(req);
@@ -24,7 +24,7 @@ const loginUser = async (req: Request, res: Response) => {
 
 const registerUser = async (req: Request, res: Response) => {
 	if (!env.oidcClientId || !env.oidcClientSecret) {
-		return internal("OIDC client credentials are not configured.");
+		throw internal("OIDC client credentials are not configured.");
 	}
 
 	const { registerUrl, state } = authService.createRegisterUrl(req);
@@ -37,18 +37,18 @@ const registerUser = async (req: Request, res: Response) => {
 };
 
 const handleCallback = async (req: Request, res: Response) => {
+	const { code, state } = req.query;
+	const expectedState = authService.getStateToken(req);
+
+	if (!code || typeof code !== "string") {
+		throw badRequest("Missing authorization code.");
+	}
+
+	if (!state || typeof state !== "string" || state !== expectedState) {
+		throw badRequest("Invalid login state.");
+	}
+
 	try {
-		const { code, state } = req.query;
-		const expectedState = authService.getStateToken(req);
-
-		if (!code || typeof code !== "string") {
-			return badRequest("Missing authorization code.");
-		}
-
-		if (!state || typeof state !== "string" || state !== expectedState) {
-			return badRequest("Invalid login state.");
-		}
-
 		const tokenResponse = await authService.exchangeCodeForToken(req, code);
 		await authService.persistUserFromToken(tokenResponse.access_token);
 
@@ -65,8 +65,8 @@ const handleCallback = async (req: Request, res: Response) => {
 		clearCookie(res, req, authService.RETURN_TO_COOKIE_NAME);
 
 		return res.redirect(authService.getClientRedirectUrl(returnTo));
-	} catch {
-		return internal("Unable to complete login.");
+	} catch (error) {
+		throw internal("Unable to complete login.");
 	}
 };
 
@@ -75,11 +75,14 @@ const getCurrentUser = async (req: Request, res: Response) => {
 		const user = await authService.fetchCurrentUser(req);
 
 		if (!user) {
-			return unauthorized("Unauthorized", { authenticated: false });
+			throw unauthorized("Unauthorized", { authenticated: false });
 		}
 
 		return ok(res, "Logged in successfully", user);
-	} catch {
+	} catch (error) {
+		if (error instanceof Error && (error as any).statusCode === 401) {
+			throw error;
+		}
 		return res.status(500).json({
 			message: "Unable to load current user.",
 		});
@@ -102,7 +105,7 @@ const logoutUser = async (req: Request, res: Response) => {
 
 const getUserPreferences = async (req: Request, res: Response) => {
 	if (!req.user?.id) {
-		return unauthorized("Authentication required.");
+		throw unauthorized("Authentication required.");
 	}
 
 	const preferences = await preferencesService.getUserPreferences(req.user.id);
@@ -112,7 +115,7 @@ const getUserPreferences = async (req: Request, res: Response) => {
 
 const updateUserPreferences = async (req: Request, res: Response) => {
 	if (!req.user?.id) {
-		return unauthorized("Authentication required.");
+		throw unauthorized("Authentication required.");
 	}
 
 	const input = parseSchema(updateUserPreferencesSchema, req.body);

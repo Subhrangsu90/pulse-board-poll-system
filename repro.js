@@ -1,0 +1,1 @@
+const { db } = require('./pb-server/dist/common/config/db.js'); async function run() { try { const userPreferences = require('./pb-server/dist/modules/auth/model/user-preferences.model.js').userPreferences; const { eq } = require('drizzle-orm'); console.log(await db.select().from(userPreferences).limit(1)); } catch (e) { console.error('DB ERROR', e); } process.exit(0); } run();

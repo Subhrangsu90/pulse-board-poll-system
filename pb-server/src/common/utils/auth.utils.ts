@@ -40,10 +40,11 @@ const setCookie = (
 	value: string,
 	maxAge = COOKIE_MAX_AGE_SECONDS
 ) => {
+	const isSecure = shouldUseSecureCookies(req);
 	res.cookie(name, value, {
 		httpOnly: true,
-		secure: shouldUseSecureCookies(req),
-		sameSite: "none",
+		secure: isSecure,
+		sameSite: isSecure ? "none" : "lax",
 		maxAge: maxAge * 1000,
 		path: "/",
 	});
@@ -65,10 +66,11 @@ const parseCookies = (req: Request): CookieMap => {
 };
 
 const clearCookie = (res: Response, req: Request, name: string) => {
+	const isSecure = shouldUseSecureCookies(req);
 	res.clearCookie(name, {
 		httpOnly: true,
-		secure: shouldUseSecureCookies(req),
-		sameSite: "none",
+		secure: isSecure,
+		sameSite: isSecure ? "none" : "lax",
 		path: "/",
 	});
 };
