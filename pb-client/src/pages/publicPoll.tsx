@@ -9,6 +9,7 @@ import {
 	type PublicPoll,
 	type PublicPollLiveMetrics,
 } from "../services/api/pollService";
+import { Skeleton } from "../components/Skeleton";
 import {
 	createPollSocket,
 	joinPollRoom,
@@ -262,10 +263,73 @@ export default function PublicPoll() {
 
 	if (isLoading) {
 		return (
-			<main className="min-h-screen bg-surface p-xl text-on-surface">
-				<p className="mx-auto max-w-3xl rounded-xl border border-outline-variant bg-surface-container p-xl">
-					Loading poll...
-				</p>
+			<main className="min-h-screen bg-surface text-on-surface">
+				<div className="border-b border-outline-variant bg-surface-container-lowest/90">
+					<div className="mx-auto flex max-w-6xl items-center justify-between px-md py-md">
+						<div className="flex items-center gap-sm">
+							<Skeleton className="h-6 w-6 rounded-full" />
+							<Skeleton className="h-6 w-20" />
+						</div>
+						<Skeleton className="h-6 w-24 rounded-full" />
+					</div>
+				</div>
+
+				<div className="mx-auto grid max-w-6xl grid-cols-1 gap-gutter px-md py-xl lg:grid-cols-[minmax(0,1fr)_22rem]">
+					<div className="space-y-lg">
+						<header className="rounded-xl border border-outline-variant bg-surface-container-lowest p-xl shadow-popover space-y-md">
+							<div className="flex gap-xs">
+								<Skeleton className="h-6 w-32 rounded-full" />
+								<Skeleton className="h-6 w-20 rounded-full" />
+							</div>
+							<Skeleton className="h-10 w-3/4 mt-2" />
+							<Skeleton className="h-4 w-5/6 mt-2" />
+							<div className="grid grid-cols-1 gap-sm border-t border-outline-variant pt-lg mt-4 md:grid-cols-3">
+								{[...Array(3)].map((_, i) => (
+									<div key={i} className="flex gap-sm p-md rounded-lg bg-surface-container-low">
+										<Skeleton className="h-5 w-5 rounded-full" />
+										<div className="flex-grow space-y-xs">
+											<Skeleton className="h-3 w-12" />
+											<Skeleton className="h-4 w-20" />
+										</div>
+									</div>
+								))}
+							</div>
+						</header>
+
+						<section className="space-y-lg">
+							{[...Array(2)].map((_, i) => (
+								<article className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-md" key={i}>
+									<div className="flex gap-xs">
+										<Skeleton className="h-6 w-24 rounded-full" />
+										<Skeleton className="h-6 w-32 rounded-full" />
+									</div>
+									<Skeleton className="h-6 w-2/3" />
+									<div className="space-y-sm">
+										{[...Array(3)].map((_, j) => (
+											<div key={j} className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-between px-md">
+												<Skeleton className="h-4 w-32" />
+												<Skeleton className="h-5 w-5 rounded-full" />
+											</div>
+										))}
+									</div>
+								</article>
+							))}
+						</section>
+					</div>
+
+					<aside className="space-y-lg">
+						{[...Array(3)].map((_, i) => (
+							<section key={i} className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-sm">
+								<div className="flex gap-sm">
+									<Skeleton className="h-6 w-6 rounded-full" />
+									<Skeleton className="h-6 w-24" />
+								</div>
+								<Skeleton className="h-4 w-full" />
+								<Skeleton className="h-3 w-2/3" />
+							</section>
+						))}
+					</aside>
+				</div>
 			</main>
 		);
 	}
@@ -371,10 +435,24 @@ export default function PublicPoll() {
 					</header>
 
 					{isCheckingAuth && requiresAuthentication ? (
-						<section className="rounded-xl border border-outline-variant bg-surface-container p-xl text-center">
-							<p className="font-sans text-on-surface-variant">
-								Checking response access...
-							</p>
+						<section className="space-y-lg">
+							{[...Array(2)].map((_, i) => (
+								<article className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-md" key={i}>
+									<div className="flex gap-xs">
+										<Skeleton className="h-6 w-24 rounded-full" />
+										<Skeleton className="h-6 w-32 rounded-full" />
+									</div>
+									<Skeleton className="h-6 w-2/3" />
+									<div className="space-y-sm">
+										{[...Array(3)].map((_, j) => (
+											<div key={j} className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-between px-md">
+												<Skeleton className="h-4 w-32" />
+												<Skeleton className="h-5 w-5 rounded-full" />
+											</div>
+										))}
+									</div>
+								</article>
+							))}
 						</section>
 					) : (
 						<section className="space-y-lg">

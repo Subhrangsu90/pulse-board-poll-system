@@ -17,6 +17,7 @@ import {
 	type TooltipComponentOption,
 } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
+import { Skeleton } from "../components/Skeleton";
 import { useToast } from "../components/toastContext";
 import { getApiErrorMessage } from "../services/api/apiService";
 import {
@@ -486,10 +487,55 @@ export default function Results() {
 
 	if (isLoadingPolls) {
 		return (
-			<section className="rounded-xl border border-outline-variant bg-surface-container p-xl">
-				<p className="font-sans text-on-surface-variant">
-					Loading results...
-				</p>
+			<section className="space-y-gutter pb-32 md:pb-0">
+				<header className="flex flex-col justify-between gap-lg border-b border-outline-variant pb-lg lg:flex-row lg:items-end">
+					<div className="space-y-sm flex-grow">
+						<div className="flex flex-wrap items-center gap-sm">
+							<Skeleton className="h-6 w-20 rounded" />
+							<Skeleton className="h-6 w-40 rounded" />
+						</div>
+						<Skeleton className="h-10 w-2/3 mt-2" />
+						<Skeleton className="h-4 w-1/2 mt-2" />
+					</div>
+					<div className="flex flex-col gap-sm">
+						<div className="h-16 w-80 rounded-xl border border-outline-variant bg-surface-container-low" />
+						<div className="flex gap-sm">
+							<Skeleton className="h-10 w-40 rounded-lg" />
+							<Skeleton className="h-10 w-24 rounded-full" />
+						</div>
+					</div>
+				</header>
+				<div className="grid grid-cols-1 gap-gutter lg:grid-cols-12">
+					<div className="space-y-md rounded-xl border border-outline-variant bg-surface-container p-md lg:col-span-7">
+						<div className="flex items-center justify-between border-b border-outline-variant pb-sm">
+							<div className="space-y-xs">
+								<Skeleton className="h-6 w-48" />
+								<Skeleton className="h-4 w-32" />
+							</div>
+							<div className="space-y-xs text-right">
+								<Skeleton className="h-3 w-16 ml-auto" />
+								<Skeleton className="h-5 w-24 ml-auto" />
+							</div>
+						</div>
+						<Skeleton className="h-48 w-full rounded-lg" />
+					</div>
+					<div className="flex flex-col gap-gutter lg:col-span-5">
+						<div className="flex-grow rounded-xl border border-outline-variant bg-surface-container-high p-lg space-y-md">
+							<div className="flex justify-between">
+								<div className="space-y-xs">
+									<Skeleton className="h-3 w-24" />
+									<Skeleton className="h-8 w-12" />
+								</div>
+								<Skeleton className="h-6 w-6" />
+							</div>
+							<div className="flex h-12 items-end gap-1">
+								{[...Array(7)].map((_, i) => (
+									<Skeleton key={i} className="w-full bg-surface-container-highest" style={{ height: `${20 + i * 10}%` }} />
+								))}
+							</div>
+						</div>
+					</div>
+				</div>
 			</section>
 		);
 	}
@@ -630,11 +676,61 @@ export default function Results() {
 			) : null}
 
 			{isLoadingResults || !results ? (
-				<section className="rounded-xl border border-outline-variant bg-surface-container p-xl">
-					<p className="font-sans text-on-surface-variant">
-						Loading selected poll...
-					</p>
-				</section>
+				<div className="space-y-gutter">
+					<div className="grid grid-cols-1 gap-gutter lg:grid-cols-12">
+						<div className="space-y-md rounded-xl border border-outline-variant bg-surface-container p-md lg:col-span-7">
+							<div className="flex items-center justify-between border-b border-outline-variant pb-sm">
+								<div className="space-y-xs">
+									<Skeleton className="h-6 w-48" />
+									<Skeleton className="h-4 w-32" />
+								</div>
+								<div className="space-y-xs text-right">
+									<Skeleton className="h-3 w-16 ml-auto" />
+									<Skeleton className="h-5 w-24 ml-auto" />
+								</div>
+							</div>
+							<Skeleton className="h-48 w-full rounded-lg" />
+						</div>
+						<div className="flex flex-col gap-gutter lg:col-span-5">
+							<div className="flex-grow rounded-xl border border-outline-variant bg-surface-container-high p-lg space-y-md">
+								<div className="flex justify-between">
+									<div className="space-y-xs">
+										<Skeleton className="h-3 w-24" />
+										<Skeleton className="h-8 w-12" />
+									</div>
+									<Skeleton className="h-6 w-6" />
+								</div>
+								<div className="flex h-12 items-end gap-1">
+									{[...Array(7)].map((_, i) => (
+										<Skeleton key={i} className="w-full bg-surface-container-highest" style={{ height: `${20 + i * 10}%` }} />
+									))}
+								</div>
+							</div>
+							<div className="flex gap-gutter">
+								<div className="flex-1 rounded-xl border border-outline-variant bg-surface-container-high p-4 space-y-xs">
+									<Skeleton className="h-3 w-12" />
+									<Skeleton className="h-8 w-16" />
+									<Skeleton className="h-1.5 w-full rounded-full" />
+								</div>
+								<div className="flex-1 rounded-xl border border-outline-variant bg-surface-container-high p-4 space-y-xs">
+									<Skeleton className="h-3 w-16" />
+									<Skeleton className="h-8 w-10" />
+									<Skeleton className="h-3 w-20" />
+								</div>
+							</div>
+						</div>
+					</div>
+					<div className="grid grid-cols-1 gap-gutter md:grid-cols-2">
+						<div className="rounded-xl border border-outline-variant bg-surface-container p-lg space-y-md">
+							<Skeleton className="h-6 w-40" />
+							<Skeleton className="h-48 w-full rounded-lg" />
+						</div>
+						<div className="rounded-xl border border-outline-variant bg-surface-container p-lg space-y-md">
+							<Skeleton className="h-6 w-40" />
+							<Skeleton className="h-48 w-full rounded-lg" />
+						</div>
+					</div>
+				</div>
 			) : (
 				<>
 					<div className="grid grid-cols-1 gap-gutter lg:grid-cols-12">

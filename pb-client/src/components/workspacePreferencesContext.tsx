@@ -24,7 +24,7 @@ type WorkspacePreferencesContextValue = {
 	updatePreferences: (patch: Partial<WorkspacePreferences>) => Promise<void>;
 };
 
-const WorkspacePreferencesContext = createContext<WorkspacePreferencesContextValue | null>(null);
+export const WorkspacePreferencesContext = createContext<WorkspacePreferencesContextValue | null>(null);
 
 export function WorkspacePreferencesProvider({ children }: { children: ReactNode }) {
 	const queryClient = useQueryClient();

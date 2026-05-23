@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useToast } from "../components/toastContext";
 import { getApiErrorMessage } from "../services/api/apiService";
 import { pollService, type Poll, type PollsSummary } from "../services/api/pollService";
+import { Skeleton } from "../components/Skeleton";
 
 export default function Dashboard() {
 	const toast = useToast();
@@ -61,21 +62,21 @@ export default function Dashboard() {
 			<section className="grid grid-cols-1 gap-gutter md:grid-cols-4">
 				<MetricCard
 					label="Total Polls"
-					value={isLoading ? "..." : polls.length}
+					value={isLoading ? <Skeleton className="h-10 w-16 my-1" /> : polls.length}
 				/>
 				<MetricCard
 					label="Active Polls"
-					value={isLoading ? "..." : activePolls.length}
+					value={isLoading ? <Skeleton className="h-10 w-16 my-1" /> : activePolls.length}
 					badge={activePolls.length > 0 ? "Live now" : undefined}
 				/>
 				<MetricCard
 					label="Completed Polls"
-					value={isLoading ? "..." : completedPolls.length}
+					value={isLoading ? <Skeleton className="h-10 w-16 my-1" /> : completedPolls.length}
 				/>
 
 				<MetricCard
 					label="Total Responses"
-					value={isLoading ? "..." : totalResponses}
+					value={isLoading ? <Skeleton className="h-10 w-16 my-1" /> : totalResponses}
 				/>
 			</section>
 
@@ -94,7 +95,11 @@ export default function Dashboard() {
 
 					<div className="space-y-md">
 						{isLoading ? (
-							<PollSkeleton />
+							<>
+								<PollSkeleton />
+								<PollSkeleton />
+								<PollSkeleton />
+							</>
 						) : activePolls.length > 0 ? (
 							activePolls.slice(0, 3).map((poll) => (
 								<PollCard
@@ -128,8 +133,8 @@ export default function Dashboard() {
 						<div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low">
 							{isLoading ? (
 								<div className="space-y-sm p-md">
-									<div className="h-4 w-3/4 animate-pulse rounded-full bg-surface-container-highest" />
-									<div className="h-3 w-1/2 animate-pulse rounded-full bg-surface-container-highest" />
+									<Skeleton className="h-4 w-3/4" />
+									<Skeleton className="h-3 w-1/2" />
 								</div>
 							) : draftPolls.length > 0 ? (
 								draftPolls.slice(0, 3).map((poll) => (
@@ -187,7 +192,7 @@ export default function Dashboard() {
 
 type MetricCardProps = {
 	label: string;
-	value: number | string;
+	value: ReactNode;
 	badge?: string;
 };
 
@@ -198,9 +203,9 @@ function MetricCard({ label, value, badge }: MetricCardProps) {
 				{label}
 			</p>
 			<div className="flex items-baseline gap-2">
-				<p className="font-serif text-display-lg text-primary">
+				<div className="font-serif text-display-lg text-primary leading-none">
 					{value}
-				</p>
+				</div>
 				{badge ? (
 					<span className="rounded bg-secondary-container px-2 py-0.5 font-sans text-label-md text-secondary">
 						{badge}
@@ -255,12 +260,10 @@ function PollCard({ poll }: { poll: Poll }) {
 
 function PollSkeleton() {
 	return (
-		<div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-md">
-			<div className="space-y-sm">
-				<div className="h-4 w-40 animate-pulse rounded-full bg-surface-container-highest" />
-				<div className="h-6 w-3/4 animate-pulse rounded-full bg-surface-container-highest" />
-				<div className="h-4 w-1/2 animate-pulse rounded-full bg-surface-container-highest" />
-			</div>
+		<div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-md space-y-sm">
+			<Skeleton className="h-4 w-40" />
+			<Skeleton className="h-6 w-3/4" />
+			<Skeleton className="h-4 w-1/2" />
 		</div>
 	);
 }

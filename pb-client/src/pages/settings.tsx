@@ -6,6 +6,7 @@ import { useToast } from "../components/toastContext";
 import { getApiErrorMessage } from "../services/api/apiService";
 import { authService } from "../services/api/authService";
 import { pollService, type VoteQueueHealth } from "../services/api/pollService";
+import { Skeleton } from "../components/Skeleton";
 
 export default function Settings() {
 	const toast = useToast();
@@ -156,7 +157,17 @@ export default function Settings() {
 				</div>
 
 				{isLoadingHealth ? (
-					<p className="font-sans text-body-md text-on-surface-variant">Checking queue status...</p>
+					<div className="space-y-sm">
+						<Skeleton className="h-4 w-32" />
+						<div className="grid grid-cols-2 gap-gutter md:grid-cols-3 lg:grid-cols-6">
+							{[...Array(6)].map((_, i) => (
+								<div key={i} className="rounded-xl border border-outline-variant bg-surface-container p-md text-center space-y-xs">
+									<Skeleton className="h-3.5 w-16 mx-auto" />
+									<Skeleton className="h-8 w-12 mx-auto" />
+								</div>
+							))}
+						</div>
+					</div>
 				) : healthError ? (
 					<p className="rounded-lg bg-error-container px-md py-sm font-sans text-body-md text-on-error-container">
 						{healthError}

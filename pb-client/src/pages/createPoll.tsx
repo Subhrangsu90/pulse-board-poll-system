@@ -8,6 +8,7 @@ import {
 	type AddQuestionPayload,
 	type PollDetail,
 } from "../services/api/pollService";
+import { Skeleton } from "../components/Skeleton";
 import { CreatePollStepper } from "./create-poll/CreatePollStepper";
 import { PollRequirementsStep } from "./create-poll/PollRequirementsStep";
 import { QuestionsConfigurationStep } from "./create-poll/QuestionsConfigurationStep";
@@ -440,9 +441,26 @@ export default function CreatePoll() {
 			</header>
 
 			{isLoadingEditPoll ? (
-				<p className="rounded-xl border border-outline-variant bg-surface-container p-xl font-sans text-on-surface-variant">
-					Loading poll editor...
-				</p>
+				<div className="space-y-lg rounded-xl border border-outline-variant bg-surface-container p-xl">
+					<div className="space-y-sm">
+						<Skeleton className="h-4 w-24" />
+						<Skeleton className="h-10 w-full" />
+					</div>
+					<div className="space-y-sm">
+						<Skeleton className="h-4 w-32" />
+						<Skeleton className="h-24 w-full" />
+					</div>
+					<div className="grid grid-cols-1 gap-md md:grid-cols-2">
+						<div className="space-y-sm">
+							<Skeleton className="h-4 w-16" />
+							<Skeleton className="h-10 w-full" />
+						</div>
+						<div className="space-y-sm">
+							<Skeleton className="h-4 w-24" />
+							<Skeleton className="h-10 w-full" />
+						</div>
+					</div>
+				</div>
 			) : (
 				<div className="space-y-lg">
 					{currentStep === 1 ? (

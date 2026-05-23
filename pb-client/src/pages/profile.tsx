@@ -4,6 +4,7 @@ import { useToast } from "../components/toastContext";
 import { getApiErrorMessage } from "../services/api/apiService";
 import { authService, type CurrentUser } from "../services/api/authService";
 import { pollService, type Poll } from "../services/api/pollService";
+import { Skeleton } from "../components/Skeleton";
 
 const fallbackAvatar =
 	"https://lh3.googleusercontent.com/aida-public/AB6AXuBapolA7_kFN-5tyUgt014ox7TJNYqSact834XOLnputn0OtiraG2YjffWlUXRzxtH2Coz0Gln3Or_9lbFcc8LGLYk_pjhtH3cWbGcsGmD5Cy-Q90Rq9VBXyDSfALCKJ1eK5ztl6LMJ0A9rHgmEL6OaiaUKyNvq0NXwqsbDe8khwphtwe1sFmXVmuMzJlen0venVqiMSrKp_HpFwlk9T6PcYyaJ1UIn4nv0Bz4KltkGcWs2AIpAr0e5UENZerN18Jczc7AebQNBveWk";
@@ -52,8 +53,30 @@ export default function Profile() {
 			</div>
 
 			{isLoading ? (
-				<div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-xl">
-					<p className="font-sans text-body-md text-on-surface-variant">Loading profile...</p>
+				<div className="space-y-xl">
+					<div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+						<div className="flex flex-col gap-lg md:flex-row md:items-center">
+							<Skeleton className="h-20 w-20 rounded-full" />
+							<div className="min-w-0 flex-1 space-y-sm">
+								<Skeleton className="h-6 w-48" />
+								<Skeleton className="h-4 w-64" />
+								<Skeleton className="h-3.5 w-32" />
+							</div>
+							<div className="flex gap-sm">
+								<Skeleton className="h-10 w-36 rounded-full" />
+								<Skeleton className="h-10 w-24 rounded-full" />
+							</div>
+						</div>
+					</div>
+
+					<div className="grid grid-cols-2 gap-gutter md:grid-cols-4">
+						{[...Array(4)].map((_, i) => (
+							<div key={i} className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-xs">
+								<Skeleton className="h-4 w-24" />
+								<Skeleton className="h-8 w-12" />
+							</div>
+						))}
+					</div>
 				</div>
 			) : (
 				<>

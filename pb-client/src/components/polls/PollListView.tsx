@@ -14,6 +14,9 @@ import {
 	type Poll,
 	type UpdatePollPayload,
 } from "../../services/api/pollService";
+import { Skeleton } from "../../components/Skeleton";
+// ... (rest of imports if any, but they are defined inline)
+
 
 export type PollListViewProps = {
 	title: string;
@@ -310,9 +313,28 @@ export function PollListView({
 				) : null}
 
 				{isLoading ? (
-					<p className="rounded-xl border border-outline-variant bg-surface-container p-xl font-sans text-on-surface-variant">
-						Loading polls...
-					</p>
+					<div className="grid grid-cols-1 gap-gutter md:grid-cols-2 lg:grid-cols-3">
+						{[...Array(6)].map((_, i) => (
+							<div
+								className="flex flex-col rounded-xl border border-outline-variant bg-surface-container p-md space-y-md"
+								key={i}>
+								<div className="flex items-start justify-between gap-md">
+									<Skeleton className="h-6 w-20 rounded-full" />
+									<Skeleton className="h-6 w-6 rounded" />
+								</div>
+								<Skeleton className="h-6 w-3/4" />
+								<Skeleton className="h-4 w-5/6" />
+								<div className="space-y-xs pt-xs">
+									<Skeleton className="h-3.5 w-1/2" />
+									<Skeleton className="h-3.5 w-1/3" />
+								</div>
+								<div className="mt-auto flex flex-wrap gap-sm pt-md">
+									<Skeleton className="h-8 w-20 rounded-full" />
+									<Skeleton className="h-8 w-20 rounded-full" />
+								</div>
+							</div>
+						))}
+					</div>
 				) : null}
 
 				{!isLoading && sortedPolls.length === 0 ? (

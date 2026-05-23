@@ -9,6 +9,7 @@ import {
 	type PollAnalyticsEvent,
 	type PollVoteEvent,
 } from "../services/realtime/pollSocket";
+import { Skeleton } from "../components/Skeleton";
 
 function getSlugFromPath() {
 	const match = window.location.pathname.match(
@@ -143,8 +144,50 @@ export default function PublicResults() {
 
 	if (isLoading) {
 		return (
-			<main className="min-h-screen bg-surface p-xl text-on-surface">
-				Loading results...
+			<main className="min-h-screen bg-surface text-on-surface">
+				<section className="mx-auto max-w-6xl space-y-gutter px-md py-xl">
+					<header className="border-b border-outline-variant pb-lg space-y-sm">
+						<div className="flex gap-sm">
+							<Skeleton className="h-6 w-24 rounded-full" />
+							<Skeleton className="h-6 w-20 rounded-full" />
+						</div>
+						<Skeleton className="h-10 w-2/3" />
+						<Skeleton className="h-4 w-1/2" />
+					</header>
+
+					<div className="grid grid-cols-1 gap-gutter md:grid-cols-3">
+						{[...Array(3)].map((_, i) => (
+							<div key={i} className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-xs">
+								<Skeleton className="h-4 w-20" />
+								<Skeleton className="h-8 w-16" />
+							</div>
+						))}
+					</div>
+
+					<div className="rounded-xl border border-outline-variant bg-surface-container p-lg space-y-md">
+						<Skeleton className="h-6 w-40" />
+						<Skeleton className="h-48 w-full rounded-lg" />
+					</div>
+
+					<section className="space-y-lg">
+						{[...Array(2)].map((_, i) => (
+							<article className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg space-y-md" key={i}>
+								<Skeleton className="h-6 w-1/2" />
+								<div className="space-y-sm">
+									{[...Array(3)].map((_, j) => (
+										<div key={j} className="space-y-xs">
+											<div className="flex justify-between">
+												<Skeleton className="h-4 w-32" />
+												<Skeleton className="h-4 w-16" />
+											</div>
+											<Skeleton className="h-2 w-full rounded-full" />
+										</div>
+									))}
+								</div>
+							</article>
+						))}
+					</section>
+				</section>
 			</main>
 		);
 	}
