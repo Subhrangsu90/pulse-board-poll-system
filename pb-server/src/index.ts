@@ -6,11 +6,15 @@ import { closeSocketServer, setupSocketServer } from "./common/realtime/socket";
 import { logger } from "./common/utils/logger";
 import { env } from "./config/env";
 import { closeVoteQueues } from "./modules/poll/realtime/vote.queue";
+import { createVoteWorker, closeVoteWorker } from "./modules/poll/realtime/vote.worker";
 
 async function main() {
 	try {
 		const server = createServer(createApp());
 		await setupSocketServer(server);
+
+		const worker = createVoteWorker();
+		logger.info("Vote worker is running.");
 
 		server.listen(env.port, () => {
 			logger.info(`Server is running on http://localhost:${env.port}`);
@@ -20,6 +24,7 @@ async function main() {
 			logger.info(`Received ${signal}. Closing server...`);
 			server.close(async () => {
 				await closeSocketServer();
+				await closeVoteWorker(worker);
 				await closeVoteQueues();
 				await closeRedisConnections();
 				process.exit(0);
