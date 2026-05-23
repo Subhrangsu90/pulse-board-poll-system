@@ -213,7 +213,7 @@ export default function PublicResults() {
 		<main className="min-h-screen bg-surface text-on-surface">
 			<section className="mx-auto max-w-6xl space-y-gutter px-md py-xl">
 				<header className="border-b border-outline-variant pb-lg">
-					<div className="mb-sm flex flex-wrap items-center gap-sm">
+					<div className="mb-sm flex justify-between flex-wrap items-center gap-sm">
 						<BrandLogo
 							className="h-8 w-8"
 							showText={true}

@@ -369,7 +369,7 @@ export default function PublicPoll() {
 	return (
 		<main className="min-h-screen bg-surface text-on-surface">
 			<div className="border-b border-outline-variant bg-surface-container-lowest/90">
-				<div className="mx-auto flexs items-center justify-between px-md py-md">
+				<div className="mx-auto flex items-center justify-between px-md py-md">
 					<BrandLogo
 						className="h-8 w-8"
 						showText={true}
