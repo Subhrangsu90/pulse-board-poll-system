@@ -29,6 +29,11 @@ function getSocketUrl() {
 		return new URL(API_BASE_URL).origin;
 	}
 
+	// Fallback to the production backend if running in production on Vercel
+	if (typeof window !== "undefined" && !window.location.hostname.includes("localhost") && !window.location.hostname.includes("127.0.0.1")) {
+		return "https://pulse-board-poll-system.onrender.com";
+	}
+
 	return window.location.origin;
 }
 
