@@ -1,7 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useToast } from "../components/toastContext";
-import { getWorkspacePreferences } from "../utils/workspacePreferences";
 import { getApiErrorMessage } from "../services/api/apiService";
 import {
 	pollService,
@@ -9,6 +8,7 @@ import {
 	type PollDetail,
 } from "../services/api/pollService";
 import { Skeleton } from "../components/Skeleton";
+import { useAppStore } from "../store/useAppStore";
 import { CreatePollStepper } from "./create-poll/CreatePollStepper";
 import { PollRequirementsStep } from "./create-poll/PollRequirementsStep";
 import { QuestionsConfigurationStep } from "./create-poll/QuestionsConfigurationStep";
@@ -16,21 +16,8 @@ import { ReviewPublishStep } from "./create-poll/ReviewPublishStep";
 import { createPollSteps } from "./create-poll/steps";
 import type {
 	PollRequirements,
-	SavedQuestion,
 	StepId,
 } from "./create-poll/types";
-
-function getDefaultDateTime() {
-	const date = new Date();
-	date.setDate(date.getDate() + 7);
-
-	return {
-		date: date.toISOString().slice(0, 10),
-		time: date.toTimeString().slice(0, 5),
-	};
-}
-
-const defaultDateTime = getDefaultDateTime();
 
 function getEditPollIdFromPath() {
 	const match = window.location.pathname.match(/\/polls\/([^/]+)\/edit$/);
@@ -51,22 +38,18 @@ export default function CreatePoll() {
 	const toast = useToast();
 	const editPollId = getEditPollIdFromPath();
 	const isEditMode = Boolean(editPollId);
-	const [currentStep, setCurrentStep] = useState<StepId>(1);
-	const [createdPollId, setCreatedPollId] = useState<string | null>(
-		editPollId,
-	);
-	const [createdPollSlug, setCreatedPollSlug] = useState<string | null>(null);
+
+	const wizard = useAppStore((state) => state.pollCreation);
+	const setRequirements = useAppStore((state) => state.setPollCreationRequirements);
+	const setQuestions = useAppStore((state) => state.setPollCreationQuestions);
+	const setCurrentStep = useAppStore((state) => state.setPollCreationStep);
+	const setCreatedPollId = useAppStore((state) => state.setCreatedPollId);
+	const setCreatedPollSlug = useAppStore((state) => state.setCreatedPollSlug);
+	const resetPollCreation = useAppStore((state) => state.resetPollCreation);
+
+	const { requirements, questions, currentStep, createdPollId, createdPollSlug } = wizard;
+
 	const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
-	const [questions, setQuestions] = useState<SavedQuestion[]>([]);
-	const [requirements, setRequirements] = useState<PollRequirements>({
-		title: "",
-		description: "",
-		tags: "",
-		publicSlug: "",
-		responseMode: getWorkspacePreferences().defaultResponseMode,
-		expiresDate: defaultDateTime.date,
-		expiresTime: defaultDateTime.time,
-	});
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoadingEditPoll, setIsLoadingEditPoll] = useState(isEditMode);
@@ -85,10 +68,7 @@ export default function CreatePoll() {
 	const updateRequirements = (
 		nextRequirements: Partial<PollRequirements>,
 	) => {
-		setRequirements((currentRequirements) => ({
-			...currentRequirements,
-			...nextRequirements,
-		}));
+		setRequirements(nextRequirements);
 	};
 
 	const showError = useCallback(
@@ -416,6 +396,7 @@ export default function CreatePoll() {
 			? await savePollRequirements()
 			: await createDraftPoll();
 		if (pollId) {
+			resetPollCreation();
 			await navigate({ to: "/drafts" });
 		}
 	};
@@ -487,9 +468,10 @@ export default function CreatePoll() {
 							onClosePublishDialog={() =>
 								setIsPublishDialogOpen(false)
 							}
-							onFinishPublish={() =>
-								void navigate({ to: "/polls" })
-							}
+							onFinishPublish={() => {
+								resetPollCreation();
+								void navigate({ to: "/polls" });
+							}}
 							pollId={createdPollId}
 							publicSlug={createdPollSlug}
 							questions={questions}

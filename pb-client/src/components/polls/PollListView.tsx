@@ -17,7 +17,6 @@ import {
 import { Skeleton } from "../../components/Skeleton";
 // ... (rest of imports if any, but they are defined inline)
 
-
 export type PollListViewProps = {
 	title: string;
 	description: string;
@@ -103,18 +102,20 @@ export function PollListView({
 
 	const [sortMode, setSortMode] = useState<SortMode>("recent");
 	const [isSaving, setIsSaving] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
 	const [editForm, setEditForm] = useState<EditForm | null>(null);
 
-	const { data: polls = [], isLoading, error: queryError } = useQuery<Poll[]>({
+	const {
+		data: polls = [],
+		isLoading,
+		error: queryError,
+	} = useQuery<Poll[]>({
 		queryKey: ["polls"],
 		queryFn: () => pollService.getAllPolls(),
 	});
 
 	const showError = useCallback(
 		(message: string) => {
-			setError(message);
 			toast.error(message);
 		},
 		[toast],
@@ -160,7 +161,9 @@ export function PollListView({
 
 	const replacePoll = (poll: Poll) => {
 		queryClient.setQueryData<Poll[]>(["polls"], (currentPolls) =>
-			currentPolls ? currentPolls.map((c) => (c.id === poll.id ? poll : c)) : []
+			currentPolls
+				? currentPolls.map((c) => (c.id === poll.id ? poll : c))
+				: [],
 		);
 		void queryClient.invalidateQueries({ queryKey: ["pollsSummary"] });
 	};
@@ -198,7 +201,6 @@ export function PollListView({
 		if (!editingPoll || !editForm) return;
 
 		setIsSaving(true);
-		setError(null);
 
 		const payload: UpdatePollPayload = {
 			title: editForm.title.trim(),
@@ -227,7 +229,6 @@ export function PollListView({
 	};
 
 	const handlePublishPoll = async (poll: Poll) => {
-		setError(null);
 		try {
 			replacePoll(await pollService.publishPoll(poll.id));
 			toast.success("Poll published.");
@@ -243,7 +244,6 @@ export function PollListView({
 	};
 
 	const handleArchivePoll = async (poll: Poll) => {
-		setError(null);
 		try {
 			replacePoll(await pollService.completePoll(poll.id));
 			toast.success("Poll archived.");
@@ -259,11 +259,12 @@ export function PollListView({
 		if (!window.confirm(`Delete "${poll.title}"? This cannot be undone.`))
 			return;
 
-		setError(null);
 		try {
 			await pollService.deletePoll(poll.id);
 			queryClient.setQueryData<Poll[]>(["polls"], (currentPolls) =>
-				currentPolls ? currentPolls.filter((c) => c.id !== poll.id) : []
+				currentPolls
+					? currentPolls.filter((c) => c.id !== poll.id)
+					: [],
 			);
 			void queryClient.invalidateQueries({ queryKey: ["pollsSummary"] });
 			toast.success("Poll deleted.");
@@ -305,12 +306,6 @@ export function PollListView({
 						</select>
 					</div>
 				</header>
-
-				{error ? (
-					<p className="rounded-md bg-error-container px-md py-sm font-sans text-on-error-container">
-						{error}
-					</p>
-				) : null}
 
 				{isLoading ? (
 					<div className="grid grid-cols-1 gap-gutter md:grid-cols-2 lg:grid-cols-3">

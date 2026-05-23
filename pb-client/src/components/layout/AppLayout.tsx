@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Outlet } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WorkspacePreferencesProvider } from "../workspacePreferencesContext";
 import { authService, type CurrentUser } from "../../services/api/authService";
 import { Footer } from "./Footer";
@@ -8,9 +8,11 @@ import { Header } from "./Header";
 import { MobileNavigation } from "./MobileNavigation";
 import { Sidebar } from "./Sidebar";
 import { BrandLogo } from "../BrandLogo";
+import { useAppStore } from "../../store/useAppStore";
 
 export function AppLayout() {
 	const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+	const setCurrentUser = useAppStore((state) => state.setCurrentUser);
 
 	const { data: user = null, isLoading } = useQuery<CurrentUser | null>({
 		queryKey: ["currentUser"],
@@ -22,6 +24,10 @@ export function AppLayout() {
 			}
 		},
 	});
+
+	useEffect(() => {
+		setCurrentUser(user);
+	}, [user, setCurrentUser]);
 
 	if (isLoading) {
 		return (

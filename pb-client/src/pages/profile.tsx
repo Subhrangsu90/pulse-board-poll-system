@@ -1,36 +1,30 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useToast } from "../components/toastContext";
 import { getApiErrorMessage } from "../services/api/apiService";
-import { authService, type CurrentUser } from "../services/api/authService";
 import { pollService, type Poll } from "../services/api/pollService";
+import { authService } from "../services/api/authService";
 import { Skeleton } from "../components/Skeleton";
+import { useAppStore } from "../store/useAppStore";
+import { useQuery } from "@tanstack/react-query";
 
 const fallbackAvatar =
 	"https://lh3.googleusercontent.com/aida-public/AB6AXuBapolA7_kFN-5tyUgt014ox7TJNYqSact834XOLnputn0OtiraG2YjffWlUXRzxtH2Coz0Gln3Or_9lbFcc8LGLYk_pjhtH3cWbGcsGmD5Cy-Q90Rq9VBXyDSfALCKJ1eK5ztl6LMJ0A9rHgmEL6OaiaUKyNvq0NXwqsbDe8khwphtwe1sFmXVmuMzJlen0venVqiMSrKp_HpFwlk9T6PcYyaJ1UIn4nv0Bz4KltkGcWs2AIpAr0e5UENZerN18Jczc7AebQNBveWk";
 
 export default function Profile() {
 	const toast = useToast();
-	const [user, setUser] = useState<CurrentUser | null>(null);
-	const [polls, setPolls] = useState<Poll[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
+	const user = useAppStore((state) => state.currentUser);
+
+	const { data: polls = [], isLoading, error } = useQuery<Poll[]>({
+		queryKey: ["polls"],
+		queryFn: () => pollService.getAllPolls(),
+	});
 
 	useEffect(() => {
-		void (async () => {
-			try {
-				const [currentUser, allPolls] = await Promise.all([
-					authService.getCurrentUser(),
-					pollService.getAllPolls(),
-				]);
-				setUser(currentUser);
-				setPolls(allPolls);
-			} catch (error) {
-				toast.error(getApiErrorMessage(error, "Unable to load profile."));
-			} finally {
-				setIsLoading(false);
-			}
-		})();
-	}, [toast]);
+		if (error) {
+			toast.error(getApiErrorMessage(error, "Unable to load profile."));
+		}
+	}, [error, toast]);
 
 	const stats = useMemo(
 		() => ({

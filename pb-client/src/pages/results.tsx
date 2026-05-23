@@ -18,6 +18,7 @@ import {
 } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
 import { Skeleton } from "../components/Skeleton";
+import { useAppStore } from "../store/useAppStore";
 import { useToast } from "../components/toastContext";
 import { getApiErrorMessage } from "../services/api/apiService";
 import {
@@ -296,9 +297,8 @@ function useThemeColors() {
 export default function Results() {
 	const toast = useToast();
 	const [polls, setPolls] = useState<Poll[]>([]);
-	const [selectedPollId, setSelectedPollId] = useState<string | null>(
-		getInitialPollId,
-	);
+	const selectedPollId = useAppStore((state) => state.selectedPollId);
+	const setSelectedPollId = useAppStore((state) => state.setSelectedPollId);
 	const [results, setResults] = useState<PollResults | null>(null);
 	const [isLoadingPolls, setIsLoadingPolls] = useState(true);
 	const [isLoadingResults, setIsLoadingResults] = useState(false);
@@ -321,14 +321,16 @@ export default function Results() {
 				const loadedPolls = await pollService.getAllPolls();
 				setPolls(loadedPolls);
 
-				const initialPollId = getInitialPollId();
+				const initialPollId = selectedPollId || getInitialPollId();
 				const fallbackPoll =
 					loadedPolls.find((poll) => poll.id === initialPollId) ??
 					loadedPolls.find((poll) => poll.status !== "draft") ??
 					loadedPolls[0] ??
 					null;
 
-				setSelectedPollId(fallbackPoll?.id ?? null);
+				if (!selectedPollId && fallbackPoll) {
+					setSelectedPollId(fallbackPoll.id);
+				}
 			} catch (loadError) {
 				console.error("Unable to load polls for results:", loadError);
 				const message = getApiErrorMessage(
@@ -341,7 +343,7 @@ export default function Results() {
 				setIsLoadingPolls(false);
 			}
 		})();
-	}, [toast]);
+	}, [selectedPollId, setSelectedPollId, toast]);
 
 	useEffect(() => {
 		if (!selectedPollId) {
