@@ -136,25 +136,21 @@ const getPollById = async (pollId: string, creatorId: string) => {
 		throw notFound("Poll not found.");
 	}
 
-	const pollQuestions = await db
-		.select()
-		.from(questions)
-		.where(eq(questions.pollId, poll.id))
-		.orderBy(asc(questions.orderIndex));
+	const [pollQuestions, pollOptionsResult] = await Promise.all([
+		db
+			.select()
+			.from(questions)
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(questions.orderIndex)),
+		db
+			.select()
+			.from(options)
+			.innerJoin(questions, eq(options.questionId, questions.id))
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(options.orderIndex)),
+	]);
 
-	if (pollQuestions.length === 0) {
-		return {
-			...poll,
-			questions: [],
-		};
-	}
-
-	const questionIds = pollQuestions.map((question) => question.id);
-	const pollOptions = await db
-		.select()
-		.from(options)
-		.where(inArray(options.questionId, questionIds))
-		.orderBy(asc(options.orderIndex));
+	const pollOptions = pollOptionsResult.map((r) => r.options);
 
 	return {
 		...poll,
@@ -492,21 +488,30 @@ const submitPublicPollResponse = async (
 		throw badRequest("Anonymous response session is required.");
 	}
 
-	const pollQuestions = await db
-		.select()
-		.from(questions)
-		.where(eq(questions.pollId, poll.id))
-		.orderBy(asc(questions.orderIndex));
+	const [pollQuestions, pollOptionsResult, alreadyPersisted] = await Promise.all([
+		db
+			.select()
+			.from(questions)
+			.where(eq(questions.pollId, poll.id))
+			.orderBy(asc(questions.orderIndex)),
+		db
+			.select()
+			.from(options)
+			.innerJoin(questions, eq(options.questionId, questions.id))
+			.where(eq(questions.pollId, poll.id)),
+		hasPersistedVoteSession({
+			pollId: poll.id,
+			isAnonymous,
+			userId: input.userId,
+			anonymousIdentifier: input.anonymousIdentifier,
+		}),
+	]);
 
 	if (pollQuestions.length === 0) {
 		throw badRequest("This poll has no questions.");
 	}
 
-	const questionIds = pollQuestions.map((question) => question.id);
-	const pollOptions = await db
-		.select()
-		.from(options)
-		.where(inArray(options.questionId, questionIds));
+	const pollOptions = pollOptionsResult.map((r) => r.options);
 
 	const questionsById = new Map(pollQuestions.map((question) => [question.id, question]));
 	const optionsByQuestionId = new Map<string, Set<string>>();
@@ -546,13 +551,6 @@ const submitPublicPollResponse = async (
 			}
 		}
 	}
-
-	const alreadyPersisted = await hasPersistedVoteSession({
-		pollId: poll.id,
-		isAnonymous,
-		userId: input.userId,
-		anonymousIdentifier: input.anonymousIdentifier,
-	});
 
 	if (alreadyPersisted) {
 		throw conflict("This participant has already submitted a response.");

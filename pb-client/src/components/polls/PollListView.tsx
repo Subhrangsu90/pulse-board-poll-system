@@ -1,4 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	type FormEvent,
 	useCallback,
@@ -95,13 +96,18 @@ export function PollListView({
 }: PollListViewProps) {
 	const navigate = useNavigate();
 	const toast = useToast();
-	const [polls, setPolls] = useState<Poll[]>([]);
+	const queryClient = useQueryClient();
+
 	const [sortMode, setSortMode] = useState<SortMode>("recent");
-	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
 	const [editForm, setEditForm] = useState<EditForm | null>(null);
+
+	const { data: polls = [], isLoading, error: queryError } = useQuery<Poll[]>({
+		queryKey: ["polls"],
+		queryFn: () => pollService.getAllPolls(),
+	});
 
 	const showError = useCallback(
 		(message: string) => {
@@ -110,6 +116,13 @@ export function PollListView({
 		},
 		[toast],
 	);
+
+	useEffect(() => {
+		if (queryError) {
+			console.error("Unable to load polls:", queryError);
+			showError(getApiErrorMessage(queryError, "Unable to load polls."));
+		}
+	}, [queryError, showError]);
 
 	const filteredPolls = useMemo(() => {
 		if (!statusFilter) return polls;
@@ -142,33 +155,11 @@ export function PollListView({
 		);
 	}, [filteredPolls, showStatusSort, sortMode]);
 
-	const loadPolls = useCallback(async () => {
-		setIsLoading(true);
-		setError(null);
-
-		try {
-			setPolls(await pollService.getAllPolls());
-		} catch (loadError) {
-			console.error("Unable to load polls:", loadError);
-			showError(getApiErrorMessage(loadError, "Unable to load polls."));
-		} finally {
-			setIsLoading(false);
-		}
-	}, [showError]);
-
-	useEffect(() => {
-		void (async () => {
-			await Promise.resolve();
-			await loadPolls();
-		})();
-	}, [loadPolls]);
-
 	const replacePoll = (poll: Poll) => {
-		setPolls((currentPolls) =>
-			currentPolls.map((currentPoll) =>
-				currentPoll.id === poll.id ? poll : currentPoll,
-			),
+		queryClient.setQueryData<Poll[]>(["polls"], (currentPolls) =>
+			currentPolls ? currentPolls.map((c) => (c.id === poll.id ? poll : c)) : []
 		);
+		void queryClient.invalidateQueries({ queryKey: ["pollsSummary"] });
 	};
 
 	const copyPollLink = async (poll: Poll) => {
@@ -268,11 +259,10 @@ export function PollListView({
 		setError(null);
 		try {
 			await pollService.deletePoll(poll.id);
-			setPolls((currentPolls) =>
-				currentPolls.filter(
-					(currentPoll) => currentPoll.id !== poll.id,
-				),
+			queryClient.setQueryData<Poll[]>(["polls"], (currentPolls) =>
+				currentPolls ? currentPolls.filter((c) => c.id !== poll.id) : []
 			);
+			void queryClient.invalidateQueries({ queryKey: ["pollsSummary"] });
 			toast.success("Poll deleted.");
 		} catch (deleteError) {
 			console.error("Unable to delete poll:", deleteError);

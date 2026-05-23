@@ -1,3 +1,4 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	createContext,
 	useCallback,
@@ -26,9 +27,14 @@ type WorkspacePreferencesContextValue = {
 const WorkspacePreferencesContext = createContext<WorkspacePreferencesContextValue | null>(null);
 
 export function WorkspacePreferencesProvider({ children }: { children: ReactNode }) {
-	const [preferences, setPreferences] = useState<WorkspacePreferences>(() => getWorkspacePreferences());
-	const [isLoading, setIsLoading] = useState(true);
+	const queryClient = useQueryClient();
 	const [isSaving, setIsSaving] = useState(false);
+
+	const { data: preferences = getWorkspacePreferences(), isLoading } = useQuery<WorkspacePreferences>({
+		queryKey: ["userPreferences"],
+		queryFn: loadWorkspacePreferencesFromServer,
+		initialData: () => getWorkspacePreferences(),
+	});
 
 	const appearance = useMemo<AppearancePreferences>(
 		() => ({
@@ -42,38 +48,23 @@ export function WorkspacePreferencesProvider({ children }: { children: ReactNode
 		applyAppearance(appearance);
 	}, [appearance]);
 
-	useEffect(() => {
-		void (async () => {
-			try {
-				const loaded = await loadWorkspacePreferencesFromServer();
-				setPreferences(loaded);
-			} catch {
-				applyAppearance({
-					themeMode: preferences.themeMode,
-					textScale: preferences.textScale,
-				});
-			} finally {
-				setIsLoading(false);
-			}
-		})();
-	}, []);
-
 	const updatePreferences = useCallback(async (patch: Partial<WorkspacePreferences>) => {
 		const next = { ...preferences, ...patch };
 		const previous = preferences;
-		setPreferences(next);
+		
+		queryClient.setQueryData(["userPreferences"], next);
 		setIsSaving(true);
 
 		try {
 			const saved = await saveWorkspacePreferencesToServer(next);
-			setPreferences(saved);
+			queryClient.setQueryData(["userPreferences"], saved);
 		} catch {
-			setPreferences(previous);
+			queryClient.setQueryData(["userPreferences"], previous);
 			throw new Error("Unable to save preferences.");
 		} finally {
 			setIsSaving(false);
 		}
-	}, [preferences]);
+	}, [preferences, queryClient]);
 
 	const value = useMemo(
 		() => ({
